@@ -1,0 +1,1544 @@
+---
+// TriangleQuiz.astro
+// Self-contained, framework-free interactive lesson + quiz on the angles of a
+// triangle. No network calls, no build-time or runtime dependencies beyond
+// what Astro/the browser already provide. All diagrams are inline SVG, drawn
+// to scale from the actual angle values at build time.
+
+interface QuestionBase {
+  id: string;
+  concept: 'sum' | 'exterior' | 'isosceles' | 'equilateral' | 'classify' | 'sideangle' | 'parallel';
+  prompt: string;
+  diagramViewBox: string;
+  diagramSvg: string;
+  diagramAlt: string;
+  explanation: string;
+}
+
+interface MCQuestion extends QuestionBase {
+  type: 'mc';
+  options: string[];
+  correctIndex: number;
+}
+
+interface NumericQuestion extends QuestionBase {
+  type: 'numeric';
+  answer: number;
+  tolerance: number;
+}
+
+type Question = MCQuestion | NumericQuestion;
+
+const questions: Question[] = [
+  {
+    id: 'q1',
+    type: 'numeric',
+    concept: 'sum',
+    prompt: 'In triangle ABC, angle A = 58° and angle B = 79°. What is the measure of angle C?',
+    diagramViewBox: '-8 -8 173 180',
+    diagramAlt: 'Triangle A B C with angle A and angle B labeled, and angle C marked as unknown.',
+    diagramSvg: `
+      <polygon class="q-shape" points="26.0,146.2 131.0,146.2 106.1,18.0" />
+      <path class="q-arc" d="M 46.0 146.2 A 20.0 20.0 0 0 0 36.6 129.2" />
+      <path class="q-arc" d="M 127.2 126.5 A 20.0 20.0 0 0 0 111.0 146.2" />
+      <path class="q-arc" d="M 97.6 31.6 A 16.0 16.0 0 0 0 109.1 33.7" />
+      <text class="q-angle-label" x="56.6" y="129.2">58°</text>
+      <text class="q-angle-label" x="104.0" y="123.9">79°</text>
+      <text class="q-angle-label" x="100.4" y="48.5">?</text>
+      <circle class="q-pt" cx="26.0" cy="146.2" r="2.6" />
+      <circle class="q-pt" cx="131.0" cy="146.2" r="2.6" />
+      <circle class="q-pt" cx="106.1" cy="18.0" r="2.6" />
+      <text class="q-vertex-label" x="20.0" y="162.2">A</text>
+      <text class="q-vertex-label" x="137.0" y="162.2">B</text>
+      <text class="q-vertex-label" x="106.1" y="9.0">C</text>
+    `,
+    answer: 43,
+    tolerance: 0.5,
+    explanation:
+      'The three interior angles of any triangle always add up to 180°, so the missing angle is 180° − 58° − 79° = 43°.',
+  },
+  {
+    id: 'q2',
+    type: 'numeric',
+    concept: 'sum',
+    prompt:
+      "A triangle's three angles measure x°, 2x°, and 3x°. What is the value of the largest angle, in degrees?",
+    diagramViewBox: '-8 -8 218 115',
+    diagramAlt: 'Triangle with vertex angles labeled x degrees, 2x degrees, and 3x degrees.',
+    diagramSvg: `
+      <polygon class="q-shape" points="26.0,81.0 176.0,81.0 138.5,16.0" />
+      <path class="q-arc" d="M 48.0 81.0 A 22.0 22.0 0 0 0 45.1 70.0" />
+      <path class="q-arc" d="M 165.0 61.9 A 22.0 22.0 0 0 0 154.0 81.0" />
+      <path class="q-arc" d="M 122.9 25.0 A 18.0 18.0 0 0 0 147.5 31.6" />
+      <text class="q-angle-label" x="61.7" y="71.4">x°</text>
+      <text class="q-angle-label" x="144.0" y="62.5">2x°</text>
+      <text class="q-angle-label" x="130.0" y="47.9">3x°</text>
+      <circle class="q-pt" cx="26.0" cy="81.0" r="2.6" />
+      <circle class="q-pt" cx="176.0" cy="81.0" r="2.6" />
+      <circle class="q-pt" cx="138.5" cy="16.0" r="2.6" />
+      <text class="q-vertex-label" x="20.0" y="97.0">A</text>
+      <text class="q-vertex-label" x="182.0" y="97.0">B</text>
+      <text class="q-vertex-label" x="138.5" y="7.0">C</text>
+    `,
+    answer: 90,
+    tolerance: 0.5,
+    explanation:
+      'Since x + 2x + 3x = 180°, x = 30°, which makes the largest angle 3x = 90° — this triangle turns out to be a right triangle.',
+  },
+  {
+    id: 'q3',
+    type: 'mc',
+    concept: 'exterior',
+    prompt:
+      'In the triangle below, side BC is extended to point D. Angle A = 65° and angle B = 48°. What is the measure of the exterior angle, ∠ACD?',
+    diagramViewBox: '-8 -8 230 141',
+    diagramAlt:
+      'Triangle A B C with side B C extended to point D, showing angle A, angle B, and the unknown exterior angle at C.',
+    diagramSvg: `
+      <polygon class="q-shape" points="105.6,16.0 24.0,106.6 144.0,106.6" />
+      <line class="q-ext" x1="144.0" y1="106.6" x2="190.0" y2="106.6" />
+      <path class="q-arc" d="M 92.2 30.9 A 20.0 20.0 0 0 0 113.4 34.4" />
+      <path class="q-arc" d="M 37.4 91.7 A 20.0 20.0 0 0 1 44.0 106.6" />
+      <path class="q-arc" d="M 166.0 106.6 A 22.0 22.0 0 0 0 135.4 86.3" />
+      <text class="q-angle-label" x="99.8" y="50.5">65°</text>
+      <text class="q-angle-label" x="56.0" y="92.3">48°</text>
+      <text class="q-angle-label" x="164.4" y="75.7">?</text>
+      <circle class="q-pt" cx="105.6" cy="16.0" r="2.6" />
+      <circle class="q-pt" cx="24.0" cy="106.6" r="2.6" />
+      <circle class="q-pt" cx="144.0" cy="106.6" r="2.6" />
+      <circle class="q-pt" cx="190.0" cy="106.6" r="2.2" />
+      <text class="q-vertex-label" x="105.6" y="7.0">A</text>
+      <text class="q-vertex-label" x="18.0" y="122.6">B</text>
+      <text class="q-vertex-label" x="144.0" y="122.6">C</text>
+      <text class="q-vertex-label" x="197.0" y="109.6">D</text>
+    `,
+    options: ['113°', '67°', '48°', '132°'],
+    correctIndex: 0,
+    explanation:
+      'An exterior angle of a triangle equals the sum of the two non-adjacent (remote) interior angles: 65° + 48° = 113°.',
+  },
+  {
+    id: 'q4',
+    type: 'numeric',
+    concept: 'isosceles',
+    prompt:
+      'Triangle ABC is isosceles with AB = AC (marked with tick marks). Angle A = 38°. What is the measure of angle B?',
+    diagramViewBox: '-8 -8 181 204',
+    diagramAlt:
+      'Isosceles triangle A B C with equal sides A B and A C marked by tick marks; angle A is labeled and angle B is unknown.',
+    diagramSvg: `
+      <polygon class="q-shape" points="82.5,18.0 30.0,170.5 135.0,170.5" />
+      <path class="q-arc" d="M 76.6 35.0 A 18.0 18.0 0 0 0 88.4 35.0" />
+      <path class="q-arc" d="M 50.0 170.5 A 20.0 20.0 0 0 0 36.5 151.6" />
+      <line class="q-tick" x1="59.6" y1="95.4" x2="52.9" y2="93.1" />
+      <line class="q-tick" x1="112.1" y1="93.1" x2="105.4" y2="95.4" />
+      <text class="q-angle-label" x="82.5" y="51.0">38°</text>
+      <text class="q-angle-label" x="58.5" y="150.1">?</text>
+      <circle class="q-pt" cx="82.5" cy="18.0" r="2.6" />
+      <circle class="q-pt" cx="30.0" cy="170.5" r="2.6" />
+      <circle class="q-pt" cx="135.0" cy="170.5" r="2.6" />
+      <text class="q-vertex-label" x="82.5" y="9.0">A</text>
+      <text class="q-vertex-label" x="24.0" y="186.5">B</text>
+      <text class="q-vertex-label" x="141.0" y="186.5">C</text>
+    `,
+    answer: 71,
+    tolerance: 0.5,
+    explanation:
+      'Because AB = AC, the base angles opposite those sides are equal, so each base angle is (180° − 38°) ÷ 2 = 71°.',
+  },
+  {
+    id: 'q5',
+    type: 'mc',
+    concept: 'equilateral',
+    prompt:
+      'Triangle ABC is equilateral — all three sides are equal in length, as marked. What is the measure of each interior angle?',
+    diagramViewBox: '-8 -8 186 147',
+    diagramAlt: 'Equilateral triangle A B C with all three sides marked equal by tick marks.',
+    diagramSvg: `
+      <polygon class="q-shape" points="30.0,113.3 140.0,113.3 85.0,18.0" />
+      <line class="q-tick" x1="85.0" y1="109.8" x2="85.0" y2="116.8" />
+      <line class="q-tick" x1="109.5" y1="67.4" x2="115.5" y2="63.9" />
+      <line class="q-tick" x1="60.5" y1="67.4" x2="54.5" y2="63.9" />
+      <circle class="q-pt" cx="30.0" cy="113.3" r="2.6" />
+      <circle class="q-pt" cx="140.0" cy="113.3" r="2.6" />
+      <circle class="q-pt" cx="85.0" cy="18.0" r="2.6" />
+      <text class="q-vertex-label" x="24.0" y="129.3">A</text>
+      <text class="q-vertex-label" x="146.0" y="129.3">B</text>
+      <text class="q-vertex-label" x="85.0" y="9.0">C</text>
+    `,
+    options: ['45°', '60°', '90°', '120°'],
+    correctIndex: 1,
+    explanation: 'An equilateral triangle has three equal angles that add to 180°, and 180° ÷ 3 = 60°.',
+  },
+  {
+    id: 'q6',
+    type: 'mc',
+    concept: 'classify',
+    prompt: 'A triangle has angles measuring 96°, 42°, and 42°. How would you best classify this triangle?',
+    diagramViewBox: '-8 -8 218 128',
+    diagramAlt:
+      'Triangle A B C with angle A ninety six degrees, angle B and angle C each forty two degrees, and the two equal sides marked with tick marks.',
+    diagramSvg: `
+      <polygon class="q-shape" points="101.0,26.0 26.0,93.5 176.0,93.5" />
+      <path class="q-arc" d="M 86.1 39.4 A 20.0 20.0 0 0 0 115.9 39.4" />
+      <path class="q-arc" d="M 46.0 93.5 A 20.0 20.0 0 0 0 40.9 80.1" />
+      <path class="q-arc" d="M 161.1 80.1 A 20.0 20.0 0 0 0 156.0 93.5" />
+      <line class="q-tick" x1="65.8" y1="62.4" x2="61.2" y2="57.2" />
+      <line class="q-tick" x1="140.8" y1="57.2" x2="136.2" y2="62.4" />
+      <text class="q-angle-label" x="101.0" y="61.0">96°</text>
+      <text class="q-angle-label" x="58.7" y="81.0">42°</text>
+      <text class="q-angle-label" x="143.3" y="81.0">42°</text>
+      <circle class="q-pt" cx="101.0" cy="26.0" r="2.6" />
+      <circle class="q-pt" cx="26.0" cy="93.5" r="2.6" />
+      <circle class="q-pt" cx="176.0" cy="93.5" r="2.6" />
+      <text class="q-vertex-label" x="101.0" y="17.0">A</text>
+      <text class="q-vertex-label" x="20.0" y="109.5">B</text>
+      <text class="q-vertex-label" x="182.0" y="109.5">C</text>
+    `,
+    options: ['Acute and scalene', 'Obtuse and isosceles', 'Right and scalene', 'Obtuse and equilateral'],
+    correctIndex: 1,
+    explanation:
+      'One angle greater than 90° makes it obtuse, and two equal angles (42° and 42°) mean two sides are equal, making it isosceles too.',
+  },
+  {
+    id: 'q7',
+    type: 'mc',
+    concept: 'sideangle',
+    prompt:
+      'In triangle ABC, angle A = 82°, angle B = 61°, and angle C = 37°. Which side of the triangle is the longest?',
+    diagramViewBox: '-8 -8 204 126',
+    diagramAlt: 'Triangle A B C drawn to scale with angle A, angle B, and angle C all labeled.',
+    diagramSvg: `
+      <polygon class="q-shape" points="65.2,18.0 24.0,92.4 164.0,92.4" />
+      <path class="q-arc" d="M 56.5 33.7 A 18.0 18.0 0 0 0 79.6 28.8" />
+      <path class="q-arc" d="M 42.0 92.4 A 18.0 18.0 0 0 0 32.7 76.7" />
+      <path class="q-arc" d="M 149.6 81.6 A 18.0 18.0 0 0 0 146.0 92.4" />
+      <text class="q-angle-label" x="72.1" y="50.3">82°</text>
+      <text class="q-angle-label" x="52.4" y="75.7">61°</text>
+      <text class="q-angle-label" x="132.7" y="81.9">37°</text>
+      <circle class="q-pt" cx="65.2" cy="18.0" r="2.6" />
+      <circle class="q-pt" cx="24.0" cy="92.4" r="2.6" />
+      <circle class="q-pt" cx="164.0" cy="92.4" r="2.6" />
+      <text class="q-vertex-label" x="65.2" y="9.0">A</text>
+      <text class="q-vertex-label" x="18.0" y="108.4">B</text>
+      <text class="q-vertex-label" x="170.0" y="108.4">C</text>
+    `,
+    options: ['BC (opposite A)', 'AB (opposite C)', 'CA (opposite B)', 'All three sides are equal'],
+    correctIndex: 0,
+    explanation:
+      "In any triangle, the longest side is always opposite the largest angle — here that's the 82° angle at A, so BC is longest.",
+  },
+  {
+    id: 'q8',
+    type: 'mc',
+    concept: 'parallel',
+    prompt:
+      'A line through vertex A is drawn parallel to side BC, as shown (matching arrows mark the parallel lines). Angle B = 47°. Using alternate interior angles, what is the measure of the marked angle at A?',
+    diagramViewBox: '-8 -8 201 168',
+    diagramAlt:
+      'Triangle A B C with a dashed line through A parallel to B C, showing angle B and the unknown alternate angle at A.',
+    diagramSvg: `
+      <polygon class="q-shape" points="128.9,22.0 24.0,134.5 159.0,134.5" />
+      <line class="q-dash" x1="94.9" y1="22.0" x2="162.9" y2="22.0" />
+      <polyline class="q-chevron" points="85.9,137.7 91.5,134.5 85.9,131.2" />
+      <polyline class="q-chevron" points="140.2,25.2 145.9,22.0 140.2,18.8" />
+      <path class="q-arc" d="M 37.6 119.8 A 20.0 20.0 0 0 1 44.0 134.5" />
+      <path class="q-arc" d="M 110.9 22.0 A 18.0 18.0 0 0 0 116.6 35.2" />
+      <text class="q-angle-label" x="56.1" y="120.5">47°</text>
+      <text class="q-angle-label" x="98.6" y="35.2">?</text>
+      <circle class="q-pt" cx="128.9" cy="22.0" r="2.6" />
+      <circle class="q-pt" cx="24.0" cy="134.5" r="2.6" />
+      <circle class="q-pt" cx="159.0" cy="134.5" r="2.6" />
+      <text class="q-vertex-label" x="133.9" y="13.0">A</text>
+      <text class="q-vertex-label" x="18.0" y="150.5">B</text>
+      <text class="q-vertex-label" x="165.0" y="150.5">C</text>
+    `,
+    options: ['47°', '133°', '90°', '43°'],
+    correctIndex: 0,
+    explanation:
+      'Because the dashed line is parallel to BC, AB is a transversal, and alternate interior angles are equal — so the marked angle equals angle B, 47°.',
+  },
+  {
+    id: 'q9',
+    type: 'numeric',
+    concept: 'exterior',
+    prompt:
+      'In the triangle below, side BC is extended to point D, creating an exterior angle of 126° at C. If angle A = 55°, what is the measure of angle B?',
+    diagramViewBox: '-8 -8 234 173',
+    diagramAlt:
+      'Triangle A B C with side B C extended to point D, showing angle A, the exterior angle at C, and the unknown angle B.',
+    diagramSvg: `
+      <polygon class="q-shape" points="65.8,18.0 24.0,139.4 154.0,139.4" />
+      <line class="q-ext" x1="154.0" y1="139.4" x2="196.0" y2="139.4" />
+      <path class="q-arc" d="M 59.9 35.0 A 18.0 18.0 0 0 0 76.4 32.6" />
+      <path class="q-arc" d="M 29.9 122.4 A 18.0 18.0 0 0 1 42.0 139.4" />
+      <path class="q-arc" d="M 174.0 139.4 A 20.0 20.0 0 0 0 142.2 123.2" />
+      <text class="q-angle-label" x="70.7" y="50.6">55°</text>
+      <text class="q-angle-label" x="50.9" y="120.2">?</text>
+      <text class="q-angle-label" x="169.9" y="108.2">126°</text>
+      <circle class="q-pt" cx="65.8" cy="18.0" r="2.6" />
+      <circle class="q-pt" cx="24.0" cy="139.4" r="2.6" />
+      <circle class="q-pt" cx="154.0" cy="139.4" r="2.6" />
+      <circle class="q-pt" cx="196.0" cy="139.4" r="2.2" />
+      <text class="q-vertex-label" x="65.8" y="9.0">A</text>
+      <text class="q-vertex-label" x="18.0" y="155.4">B</text>
+      <text class="q-vertex-label" x="154.0" y="155.4">C</text>
+      <text class="q-vertex-label" x="203.0" y="142.4">D</text>
+    `,
+    answer: 71,
+    tolerance: 0.5,
+    explanation:
+      'The exterior angle equals the sum of the two remote interior angles, so 126° = 55° + angle B, which makes angle B = 71°.',
+  },
+];
+---
+
+<section class="tq" aria-labelledby="tq-heading">
+  <header class="tq-intro">
+    <p class="eyebrow">Interactive · Geometry</p>
+    <h2 id="tq-heading">The Angles of a Triangle</h2>
+    <p class="tq-lede">
+      Take this quiz to test your knowledge on the angles of a triangle. Start by dragging the
+      triangle below to build your intuition, then put it to the test.
+    </p>
+  </header>
+
+  <div class="explorer" data-explorer>
+    <div class="explorer-head">
+      <h3 class="explorer-title">Drag the corners</h3>
+      <p class="explorer-hint">
+        Drag any vertex — or focus it with Tab and press the arrow keys — to reshape the triangle.
+        The three interior angles always add up to 180°.
+      </p>
+    </div>
+    <div class="explorer-body">
+      <svg class="tri-svg" viewBox="0 0 400 320" role="img" aria-labelledby="tri-svg-title" data-tri-svg>
+        <title id="tri-svg-title">Interactive triangle with three draggable vertices, A, B and C</title>
+        <polygon class="tri-shape" data-poly points="" />
+        <path class="tri-arc" data-arc />
+        <path class="tri-arc" data-arc />
+        <path class="tri-arc" data-arc />
+        <text class="tri-angle-label" data-angle-label></text>
+        <text class="tri-angle-label" data-angle-label></text>
+        <text class="tri-angle-label" data-angle-label></text>
+        <text class="tri-name-label" data-name-label>A</text>
+        <text class="tri-name-label" data-name-label>B</text>
+        <text class="tri-name-label" data-name-label>C</text>
+        <circle class="tri-dot" data-dot r="6"></circle>
+        <circle class="tri-dot" data-dot r="6"></circle>
+        <circle class="tri-dot" data-dot r="6"></circle>
+        <circle
+          class="tri-hit"
+          data-hit
+          r="22"
+          tabindex="0"
+          role="button"
+          aria-label="Vertex A. Drag, or focus and use arrow keys, to change the triangle."
+        ></circle>
+        <circle
+          class="tri-hit"
+          data-hit
+          r="22"
+          tabindex="0"
+          role="button"
+          aria-label="Vertex B. Drag, or focus and use arrow keys, to change the triangle."
+        ></circle>
+        <circle
+          class="tri-hit"
+          data-hit
+          r="22"
+          tabindex="0"
+          role="button"
+          aria-label="Vertex C. Drag, or focus and use arrow keys, to change the triangle."
+        ></circle>
+      </svg>
+      <div class="explorer-readout">
+        <div class="angle-chips">
+          <div class="angle-chip">
+            <span class="angle-chip-value" data-chip>—</span>
+            <span class="angle-chip-name">A</span>
+          </div>
+          <div class="angle-chip">
+            <span class="angle-chip-value" data-chip>—</span>
+            <span class="angle-chip-name">B</span>
+          </div>
+          <div class="angle-chip">
+            <span class="angle-chip-value" data-chip>—</span>
+            <span class="angle-chip-name">C</span>
+          </div>
+        </div>
+        <p class="angle-equation" data-equation>—</p>
+        <p class="angle-classification" data-classification>—</p>
+      </div>
+    </div>
+    <p class="visually-hidden" role="status" aria-live="polite" data-live></p>
+  </div>
+
+  <div class="quiz" data-quiz>
+    <div class="quiz-progress">
+      <progress class="quiz-progress-bar" data-progress-bar value="1" max={questions.length}></progress>
+      <span class="quiz-progress-text" data-progress-text>Question 1 of {questions.length}</span>
+    </div>
+
+    <div data-quiz-body>
+      {
+        questions.map((q, i) => (
+          <fieldset
+            class="question"
+            data-question
+            data-type={q.type}
+            data-concept={q.concept}
+            data-explanation={q.explanation}
+            data-answer={q.type === 'numeric' ? String(q.answer) : undefined}
+            data-tolerance={q.type === 'numeric' ? String(q.tolerance) : undefined}
+            hidden={i !== 0}
+          >
+            <legend class="question-prompt" id={`${q.id}-prompt`}>
+              <span class="question-number">
+                Question {i + 1} of {questions.length}
+              </span>
+              {q.prompt}
+            </legend>
+
+            <svg
+              class="q-diagram"
+              viewBox={q.diagramViewBox}
+              role="img"
+              aria-label={q.diagramAlt}
+              set:html={q.diagramSvg}
+            />
+
+            {q.type === 'mc' ? (
+              <div class="options" role="radiogroup" aria-labelledby={`${q.id}-prompt`}>
+                {q.options.map((opt, oi) => (
+                  <label class="option">
+                    <input
+                      type="radio"
+                      name={q.id}
+                      value={String(oi)}
+                      data-correct={oi === q.correctIndex ? 'true' : 'false'}
+                    />
+                    <span class="option-text">{opt}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <div class="numeric-field">
+                <label for={`${q.id}-input`}>Your answer</label>
+                <div class="numeric-input-row">
+                  <input type="number" inputmode="decimal" step="any" id={`${q.id}-input`} data-numeric-input />
+                  <span class="unit" aria-hidden="true">°</span>
+                </div>
+              </div>
+            )}
+
+            <div class="question-actions">
+              <button type="button" class="tq-btn btn-check" data-check disabled>
+                Check answer
+              </button>
+              <button type="button" class="tq-btn tq-btn-secondary btn-next" data-next hidden>
+                {i === questions.length - 1 ? 'See results' : 'Next question'}
+              </button>
+            </div>
+            <p class="feedback" data-feedback role="status" aria-live="polite" />
+          </fieldset>
+        ))
+      }
+    </div>
+
+    <div class="results" data-results hidden>
+      <h3>Your results</h3>
+      <p class="results-score" data-results-score></p>
+      <p class="results-best" data-results-best></p>
+      <p class="results-review-heading">Concepts to review</p>
+      <ul class="results-review" data-results-review></ul>
+      <button type="button" class="tq-btn" data-retry>
+        Try again
+      </button>
+    </div>
+  </div>
+</section>
+
+<style>
+  .tq {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-7);
+  }
+
+  .tq-intro {
+    max-width: 62ch;
+  }
+
+  .tq-intro h2 {
+    margin-block: var(--sp-2) var(--sp-3);
+    font-size: var(--fs-2xl);
+  }
+
+  .tq-lede {
+    color: var(--text-muted);
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Explorer                                                          */
+  /* ---------------------------------------------------------------- */
+
+  .explorer {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-5);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .explorer-title {
+    font-size: var(--fs-lg);
+    margin-bottom: var(--sp-2);
+  }
+
+  .explorer-hint {
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
+    max-width: 60ch;
+    margin-bottom: var(--sp-4);
+  }
+
+  .explorer-body {
+    display: grid;
+    gap: var(--sp-5);
+    align-items: start;
+  }
+
+  @media (min-width: 640px) {
+    .explorer-body {
+      grid-template-columns: minmax(0, 1.5fr) minmax(180px, 1fr);
+    }
+  }
+
+  .tri-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 400 / 320;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    touch-action: none;
+  }
+
+  .tri-shape {
+    fill: var(--accent-subtle);
+    stroke: var(--accent-border);
+    stroke-width: 2;
+  }
+
+  .tri-arc {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+
+  .tri-angle-label {
+    font-size: 15px;
+    font-weight: 700;
+    fill: var(--accent);
+    text-anchor: middle;
+    dominant-baseline: middle;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tri-name-label {
+    font-size: 13px;
+    font-weight: 500;
+    fill: var(--text-muted);
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+
+  .tri-dot {
+    fill: var(--accent);
+    stroke: var(--surface);
+    stroke-width: 2;
+    pointer-events: none;
+  }
+
+  .tri-hit {
+    fill: rgba(0, 0, 0, 0.001);
+    stroke: none;
+    cursor: grab;
+    pointer-events: all;
+  }
+
+  .tri-hit.is-dragging {
+    cursor: grabbing;
+  }
+
+  .tri-hit:focus-visible {
+    fill: color-mix(in srgb, var(--accent) 22%, transparent);
+    stroke: var(--focus-ring);
+    stroke-width: 2;
+    outline: none;
+  }
+
+  .explorer-readout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+  }
+
+  .angle-chips {
+    display: flex;
+    gap: var(--sp-2);
+  }
+
+  .angle-chip {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: var(--sp-3) var(--sp-1);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+  }
+
+  .angle-chip-value {
+    font-size: var(--fs-xl);
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .angle-chip-name {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+  }
+
+  .angle-equation {
+    font-size: var(--fs-base);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .angle-classification {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--r-full);
+    background: var(--accent-subtle);
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Quiz diagram primitives (rendered via set:html, so :global)       */
+  /* ---------------------------------------------------------------- */
+
+  :global(.q-shape) {
+    fill: var(--accent-subtle);
+    stroke: var(--border-strong);
+    stroke-width: 1.5;
+  }
+
+  :global(.q-arc) {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.75;
+  }
+
+  :global(.q-angle-label) {
+    font-size: 11px;
+    font-weight: 700;
+    fill: var(--accent);
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+
+  :global(.q-vertex-label) {
+    font-size: 10px;
+    font-weight: 500;
+    fill: var(--text-muted);
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+
+  :global(.q-tick) {
+    stroke: var(--text-muted);
+    stroke-width: 1.5;
+  }
+
+  :global(.q-ext) {
+    stroke: var(--border-strong);
+    stroke-width: 1.5;
+  }
+
+  :global(.q-dash) {
+    stroke: var(--text-faint);
+    stroke-width: 1.25;
+    stroke-dasharray: 4 3;
+  }
+
+  :global(.q-chevron) {
+    fill: none;
+    stroke: var(--text-faint);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  :global(.q-pt) {
+    fill: var(--surface);
+    stroke: var(--border-strong);
+    stroke-width: 1.4;
+  }
+
+  .q-diagram {
+    display: block;
+    width: 100%;
+    max-width: 260px;
+    height: auto;
+    margin-inline: auto;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--sp-2);
+    margin-bottom: var(--sp-4);
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Quiz shell                                                        */
+  /* ---------------------------------------------------------------- */
+
+  .tq-good {
+    color: var(--tq-good);
+  }
+
+  .tq {
+    --tq-good: #1a7a3c;
+    --tq-bad: #c0152f;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :global(html:not([data-theme='light'])) .tq {
+      --tq-good: #4ade80;
+      --tq-bad: #ff8080;
+    }
+  }
+
+  :global(html[data-theme='dark']) .tq {
+    --tq-good: #4ade80;
+    --tq-bad: #ff8080;
+  }
+
+  .quiz {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-5);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .quiz-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-5);
+  }
+
+  .quiz-progress-bar {
+    flex: 1;
+    height: 8px;
+    appearance: none;
+    border: none;
+    border-radius: var(--r-full);
+    overflow: hidden;
+    background: var(--bg-subtle);
+  }
+
+  .quiz-progress-bar::-webkit-progress-bar {
+    background: var(--bg-subtle);
+    border-radius: var(--r-full);
+  }
+
+  .quiz-progress-bar::-webkit-progress-value {
+    background: var(--accent);
+    border-radius: var(--r-full);
+  }
+
+  .quiz-progress-bar::-moz-progress-bar {
+    background: var(--accent);
+    border-radius: var(--r-full);
+  }
+
+  .quiz-progress-text {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .question {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .question-prompt {
+    font-size: var(--fs-lg);
+    font-weight: 500;
+    line-height: var(--lh-snug);
+    margin-bottom: var(--sp-4);
+    padding: 0;
+  }
+
+  .question-number {
+    display: block;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--sp-1);
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-4);
+  }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+  }
+
+  .option:hover {
+    border-color: var(--accent-border);
+    background: var(--bg-subtle);
+  }
+
+  .option:has(input:focus-visible) {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .option:has(input:disabled) {
+    cursor: default;
+  }
+
+  .option input[type='radio'] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .option-text {
+    font-size: var(--fs-base);
+  }
+
+  .option.is-selected {
+    border-color: var(--accent);
+    background: var(--accent-subtle);
+  }
+
+  .numeric-field {
+    margin-bottom: var(--sp-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    max-width: 220px;
+  }
+
+  .numeric-field label {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+  }
+
+  .numeric-input-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .numeric-input-row input {
+    width: 100%;
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: var(--fs-base);
+  }
+
+  .numeric-input-row input:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .numeric-input-row .unit {
+    color: var(--text-muted);
+    font-size: var(--fs-lg);
+  }
+
+  .question-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-top: var(--sp-4);
+  }
+
+  @media (max-width: 420px) {
+    .question-actions {
+      flex-direction: column;
+    }
+  }
+
+  .tq-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    padding: 0.7em 1.6em;
+    border-radius: var(--r-full);
+    background: var(--accent);
+    color: var(--text-on-accent);
+    font-size: var(--fs-base);
+    font-weight: 500;
+    border: 1px solid transparent;
+    transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur) var(--ease),
+      background-color var(--dur) var(--ease);
+  }
+
+  .tq-btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .tq-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .tq-btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
+
+  .tq-btn-secondary:hover:not(:disabled) {
+    background: var(--bg-subtle);
+  }
+
+  .feedback {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-body);
+  }
+
+  .feedback:empty {
+    display: none;
+  }
+
+  .feedback:not(:empty) {
+    margin-top: var(--sp-4);
+  }
+
+  .feedback.is-correct {
+    color: var(--tq-good);
+    border-left: 3px solid var(--tq-good);
+    padding-left: var(--sp-3);
+  }
+
+  .feedback.is-incorrect {
+    color: var(--tq-bad);
+    border-left: 3px solid var(--tq-bad);
+    padding-left: var(--sp-3);
+  }
+
+  .feedback :global(svg) {
+    flex-shrink: 0;
+    margin-top: 0.2em;
+  }
+
+  .feedback span {
+    color: var(--text);
+  }
+
+  .results-score {
+    font-size: var(--fs-xl);
+    font-weight: 500;
+    margin-bottom: var(--sp-2);
+  }
+
+  .results-best {
+    color: var(--text-muted);
+    margin-bottom: var(--sp-5);
+  }
+
+  .results-review-heading {
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--ls-wide);
+    color: var(--text-muted);
+    margin-bottom: var(--sp-2);
+  }
+
+  .results-review {
+    list-style: disc;
+    padding-left: 1.3em;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    margin-bottom: var(--sp-5);
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tq-btn,
+    .option,
+    .numeric-input-row input,
+    .quiz-progress-bar {
+      transition: none !important;
+    }
+  }
+</style>
+
+<script>
+  // ==================================================================
+  // Triangle explorer: draggable / keyboard-operable vertices with a
+  // live angle readout and classification.
+  // ==================================================================
+
+  type Pt = { x: number; y: number };
+
+  const VB_W = 400;
+  const VB_H = 320;
+  const MARGIN = 40;
+  const MIN_ANGLE = 4;
+  const MIN_SIDE = 46;
+
+  function dist(p: Pt, q: Pt): number {
+    return Math.hypot(p.x - q.x, p.y - q.y);
+  }
+
+  function angleAt(p: Pt, q: Pt, r: Pt): number {
+    const v1x = q.x - p.x;
+    const v1y = q.y - p.y;
+    const v2x = r.x - p.x;
+    const v2y = r.y - p.y;
+    const m1 = Math.hypot(v1x, v1y);
+    const m2 = Math.hypot(v2x, v2y);
+    if (m1 === 0 || m2 === 0) return 0;
+    let cos = (v1x * v2x + v1y * v2y) / (m1 * m2);
+    cos = Math.min(1, Math.max(-1, cos));
+    return (Math.acos(cos) * 180) / Math.PI;
+  }
+
+  function anglesOf(p: Pt[]): [number, number, number] {
+    return [angleAt(p[0], p[1], p[2]), angleAt(p[1], p[2], p[0]), angleAt(p[2], p[0], p[1])];
+  }
+
+  function isValidTriangle(p: Pt[]): boolean {
+    const sides = [dist(p[0], p[1]), dist(p[1], p[2]), dist(p[2], p[0])];
+    if (sides.some((s) => s < MIN_SIDE)) return false;
+    const angles = anglesOf(p);
+    if (angles.some((a) => a < MIN_ANGLE)) return false;
+    return true;
+  }
+
+  function clampCoord(v: number, lo: number, hi: number): number {
+    return Math.min(hi, Math.max(lo, v));
+  }
+
+  function initExplorer(): void {
+    const root = document.querySelector<HTMLElement>('[data-explorer]');
+    if (!root) return;
+
+    const svg = root.querySelector<SVGSVGElement>('[data-tri-svg]');
+    const polygonEl = root.querySelector<SVGPolygonElement>('[data-poly]');
+    const arcEls = Array.from(root.querySelectorAll<SVGPathElement>('[data-arc]'));
+    const labelEls = Array.from(root.querySelectorAll<SVGTextElement>('[data-angle-label]'));
+    const nameEls = Array.from(root.querySelectorAll<SVGTextElement>('[data-name-label]'));
+    const hitEls = Array.from(root.querySelectorAll<SVGCircleElement>('[data-hit]'));
+    const dotEls = Array.from(root.querySelectorAll<SVGCircleElement>('[data-dot]'));
+    const chipEls = Array.from(root.querySelectorAll<HTMLElement>('[data-chip]'));
+    const equationEl = root.querySelector<HTMLElement>('[data-equation]');
+    const classificationEl = root.querySelector<HTMLElement>('[data-classification]');
+    const liveEl = root.querySelector<HTMLElement>('[data-live]');
+
+    if (!svg || !polygonEl || !equationEl || !classificationEl || !liveEl) return;
+    if (
+      arcEls.length !== 3 ||
+      labelEls.length !== 3 ||
+      nameEls.length !== 3 ||
+      hitEls.length !== 3 ||
+      dotEls.length !== 3 ||
+      chipEls.length !== 3
+    ) {
+      return;
+    }
+
+    let pts: Pt[] = [
+      { x: 200, y: 50 },
+      { x: 70, y: 260 },
+      { x: 330, y: 230 },
+    ];
+
+    let lastDisp: [number, number, number] = [0, 0, 0];
+    let lastWords = '';
+
+    function toSvgPoint(clientX: number, clientY: number): Pt {
+      const ctm = svg!.getScreenCTM();
+      if (!ctm) return { x: clientX, y: clientY };
+      const p = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
+      return { x: p.x, y: p.y };
+    }
+
+    function classify(
+      angles: [number, number, number],
+      sides: [number, number, number]
+    ): { byAngle: string; bySide: string } {
+      const max = Math.max(angles[0], angles[1], angles[2]);
+      let byAngle: string;
+      if (Math.abs(max - 90) <= 1.5) byAngle = 'right';
+      else if (max > 90) byAngle = 'obtuse';
+      else byAngle = 'acute';
+
+      const avg = (sides[0] + sides[1] + sides[2]) / 3;
+      const tol = avg * 0.02;
+      const ab = Math.abs(sides[0] - sides[1]) <= tol;
+      const bc = Math.abs(sides[1] - sides[2]) <= tol;
+      const ca = Math.abs(sides[2] - sides[0]) <= tol;
+      let bySide: string;
+      if (ab && bc && ca) bySide = 'equilateral';
+      else if (ab || bc || ca) bySide = 'isosceles';
+      else bySide = 'scalene';
+      return { byAngle, bySide };
+    }
+
+    function render(): void {
+      const angles = anglesOf(pts);
+      const sides: [number, number, number] = [dist(pts[0], pts[1]), dist(pts[1], pts[2]), dist(pts[2], pts[0])];
+      const { byAngle, bySide } = classify(angles, sides);
+
+      polygonEl!.setAttribute('points', pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '));
+
+      const rawA = Math.round(angles[0]);
+      const rawB = Math.round(angles[1]);
+      const dispFixed: [number, number, number] = [rawA, rawB, 180 - rawA - rawB];
+
+      for (let i = 0; i < 3; i++) {
+        const p = pts[i];
+        hitEls[i].setAttribute('cx', p.x.toFixed(1));
+        hitEls[i].setAttribute('cy', p.y.toFixed(1));
+        dotEls[i].setAttribute('cx', p.x.toFixed(1));
+        dotEls[i].setAttribute('cy', p.y.toFixed(1));
+
+        const q = pts[(i + 1) % 3];
+        const r = pts[(i + 2) % 3];
+        const a1 = Math.atan2(q.y - p.y, q.x - p.x);
+        const a2 = Math.atan2(r.y - p.y, r.x - p.x);
+        let delta = a2 - a1;
+        while (delta <= -Math.PI) delta += Math.PI * 2;
+        while (delta > Math.PI) delta -= Math.PI * 2;
+        const sweep = delta > 0 ? 1 : 0;
+        const rArc = Math.min(30, 0.4 * Math.min(dist(p, q), dist(p, r)));
+        const sx = p.x + rArc * Math.cos(a1);
+        const sy = p.y + rArc * Math.sin(a1);
+        const ex = p.x + rArc * Math.cos(a2);
+        const ey = p.y + rArc * Math.sin(a2);
+        arcEls[i].setAttribute(
+          'd',
+          `M ${sx.toFixed(1)} ${sy.toFixed(1)} A ${rArc.toFixed(1)} ${rArc.toFixed(1)} 0 0 ${sweep} ${ex.toFixed(1)} ${ey.toFixed(1)}`
+        );
+
+        const bisector = a1 + delta / 2;
+        const labelR = rArc + 16;
+        labelEls[i].setAttribute('x', (p.x + labelR * Math.cos(bisector)).toFixed(1));
+        labelEls[i].setAttribute('y', (p.y + labelR * Math.sin(bisector)).toFixed(1));
+        labelEls[i].textContent = `${dispFixed[i]}°`;
+
+        const outR = 26;
+        nameEls[i].setAttribute('x', (p.x - outR * Math.cos(bisector)).toFixed(1));
+        nameEls[i].setAttribute('y', (p.y - outR * Math.sin(bisector)).toFixed(1));
+      }
+
+      chipEls[0].textContent = `${dispFixed[0]}°`;
+      chipEls[1].textContent = `${dispFixed[1]}°`;
+      chipEls[2].textContent = `${dispFixed[2]}°`;
+      equationEl!.textContent = `${dispFixed[0]}° + ${dispFixed[1]}° + ${dispFixed[2]}° = 180°`;
+
+      const angleWord = byAngle.charAt(0).toUpperCase() + byAngle.slice(1);
+      classificationEl!.textContent = `${angleWord}, ${bySide} triangle`;
+
+      lastDisp = dispFixed;
+      lastWords = `${byAngle}, ${bySide}`;
+    }
+
+    function announce(): void {
+      liveEl!.textContent = `Angle A ${lastDisp[0]} degrees, angle B ${lastDisp[1]} degrees, angle C ${lastDisp[2]} degrees. They sum to 180 degrees. Triangle is ${lastWords}.`;
+    }
+
+    function tryMove(i: number, x: number, y: number): void {
+      const nx = clampCoord(x, MARGIN, VB_W - MARGIN);
+      const ny = clampCoord(y, MARGIN, VB_H - MARGIN);
+      const candidate = pts.slice();
+      candidate[i] = { x: nx, y: ny };
+      if (!isValidTriangle(candidate)) return;
+      pts = candidate;
+      render();
+    }
+
+    hitEls.forEach((hit, i) => {
+      hit.addEventListener('pointerdown', (e: PointerEvent) => {
+        e.preventDefault();
+        hit.setPointerCapture(e.pointerId);
+        hit.classList.add('is-dragging');
+      });
+
+      hit.addEventListener('pointermove', (e: PointerEvent) => {
+        if (!hit.hasPointerCapture(e.pointerId)) return;
+        const p = toSvgPoint(e.clientX, e.clientY);
+        tryMove(i, p.x, p.y);
+      });
+
+      const endDrag = (e: PointerEvent) => {
+        if (hit.hasPointerCapture(e.pointerId)) hit.releasePointerCapture(e.pointerId);
+        hit.classList.remove('is-dragging');
+        announce();
+      };
+      hit.addEventListener('pointerup', endDrag);
+      hit.addEventListener('pointercancel', endDrag);
+
+      hit.addEventListener('keydown', (e: KeyboardEvent) => {
+        const step = e.shiftKey ? 2 : 8;
+        let dx = 0;
+        let dy = 0;
+        if (e.key === 'ArrowUp') dy = -step;
+        else if (e.key === 'ArrowDown') dy = step;
+        else if (e.key === 'ArrowLeft') dx = -step;
+        else if (e.key === 'ArrowRight') dx = step;
+        else return;
+        e.preventDefault();
+        tryMove(i, pts[i].x + dx, pts[i].y + dy);
+        announce();
+      });
+    });
+
+    render();
+  }
+
+  // ==================================================================
+  // Quiz: progress, scoring, per-question feedback, reshuffling and a
+  // best-score record kept in localStorage.
+  // ==================================================================
+
+  const STORAGE_KEY = 'tfc-triangle-quiz';
+
+  const CONCEPT_LABELS: Record<string, string> = {
+    sum: 'Interior angle sum — the three angles of a triangle always total 180°.',
+    exterior: 'Exterior angle theorem — an exterior angle equals the sum of the two remote interior angles.',
+    isosceles: 'Isosceles triangles — the base angles opposite the equal sides are equal.',
+    equilateral: 'Equilateral triangles — all three angles measure 60°.',
+    classify: 'Classifying triangles — by angle (acute/right/obtuse) and by side (scalene/isosceles/equilateral).',
+    sideangle: 'Side–angle relationships — the longest side is always opposite the largest angle.',
+    parallel: 'Parallel lines & transversals — alternate interior angles are equal.',
+  };
+
+  const CHECK_ICON =
+    '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 10.4l2.6 2.6L14.3 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const X_ICON =
+    '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 7l6 6M13 7l-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+  function loadBestScore(total: number): number {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw) as { best?: number; total?: number };
+      if (typeof parsed.best === 'number' && parsed.total === total) return parsed.best;
+      return 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  function saveBestScore(best: number, total: number): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ best, total }));
+    } catch {
+      /* localStorage unavailable (private browsing, blocked storage, etc.) */
+    }
+  }
+
+  function shuffleChildren(container: Element): void {
+    const items = Array.from(container.children);
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = items[i];
+      items[i] = items[j];
+      items[j] = tmp;
+    }
+    items.forEach((el) => container.appendChild(el));
+  }
+
+  function initQuiz(): void {
+    const root = document.querySelector<HTMLElement>('[data-quiz]');
+    if (!root) return;
+
+    const questionEls = Array.from(root.querySelectorAll<HTMLFieldSetElement>('[data-question]'));
+    const progressBar = root.querySelector<HTMLProgressElement>('[data-progress-bar]');
+    const progressText = root.querySelector<HTMLElement>('[data-progress-text]');
+    const resultsPanel = root.querySelector<HTMLElement>('[data-results]');
+    const quizBody = root.querySelector<HTMLElement>('[data-quiz-body]');
+    const resultsScoreEl = root.querySelector<HTMLElement>('[data-results-score]');
+    const resultsBestEl = root.querySelector<HTMLElement>('[data-results-best]');
+    const resultsReviewEl = root.querySelector<HTMLElement>('[data-results-review]');
+    const retryBtn = root.querySelector<HTMLButtonElement>('[data-retry]');
+
+    if (
+      !progressBar ||
+      !progressText ||
+      !resultsPanel ||
+      !quizBody ||
+      !resultsScoreEl ||
+      !resultsBestEl ||
+      !resultsReviewEl ||
+      !retryBtn ||
+      questionEls.length === 0
+    ) {
+      return;
+    }
+
+    const total = questionEls.length;
+    let current = 0;
+    let score = 0;
+    const answered: boolean[] = new Array(total).fill(false);
+    const answeredCorrect: boolean[] = new Array(total).fill(false);
+
+    function optionGroups(): HTMLElement[] {
+      return Array.from(root!.querySelectorAll<HTMLElement>('.options'));
+    }
+
+    function updateCheckEnabled(fieldset: HTMLFieldSetElement): void {
+      const checkBtn = fieldset.querySelector<HTMLButtonElement>('[data-check]');
+      if (!checkBtn) return;
+      if (fieldset.dataset.type === 'mc') {
+        const checked = fieldset.querySelector<HTMLInputElement>('input[type="radio"]:checked');
+        checkBtn.disabled = !checked;
+      } else {
+        const input = fieldset.querySelector<HTMLInputElement>('[data-numeric-input]');
+        checkBtn.disabled = !input || input.value.trim() === '';
+      }
+    }
+
+    function resetQuestionUI(fieldset: HTMLFieldSetElement): void {
+      const radios = Array.from(fieldset.querySelectorAll<HTMLInputElement>('input[type="radio"]'));
+      radios.forEach((r) => {
+        r.checked = false;
+        r.disabled = false;
+      });
+      fieldset.querySelectorAll('.option').forEach((el) => el.classList.remove('is-selected'));
+
+      const numInput = fieldset.querySelector<HTMLInputElement>('[data-numeric-input]');
+      if (numInput) {
+        numInput.value = '';
+        numInput.disabled = false;
+      }
+
+      const feedback = fieldset.querySelector<HTMLElement>('[data-feedback]');
+      if (feedback) {
+        feedback.textContent = '';
+        feedback.className = 'feedback';
+      }
+
+      const checkBtn = fieldset.querySelector<HTMLButtonElement>('[data-check]');
+      const nextBtn = fieldset.querySelector<HTMLButtonElement>('[data-next]');
+      if (checkBtn) {
+        checkBtn.hidden = false;
+        checkBtn.disabled = true;
+      }
+      if (nextBtn) nextBtn.hidden = true;
+    }
+
+    function showQuestion(index: number): void {
+      questionEls.forEach((fs, i) => {
+        fs.hidden = i !== index;
+      });
+      progressBar!.value = index + 1;
+      progressText!.textContent = `Question ${index + 1} of ${total}`;
+    }
+
+    function checkAnswer(fieldset: HTMLFieldSetElement, index: number): void {
+      const type = fieldset.dataset.type;
+      const feedback = fieldset.querySelector<HTMLElement>('[data-feedback]');
+      const explanation = fieldset.dataset.explanation ?? '';
+      let correct = false;
+      let correctText = '';
+
+      if (type === 'mc') {
+        const checked = fieldset.querySelector<HTMLInputElement>('input[type="radio"]:checked');
+        if (!checked) return;
+        correct = checked.dataset.correct === 'true';
+        const correctInput = fieldset.querySelector<HTMLInputElement>('input[data-correct="true"]');
+        const label = correctInput ? correctInput.closest('label') : null;
+        const textEl = label ? label.querySelector<HTMLElement>('.option-text') : null;
+        correctText = textEl?.textContent ?? '';
+      } else {
+        const input = fieldset.querySelector<HTMLInputElement>('[data-numeric-input]');
+        if (!input) return;
+        const value = parseFloat(input.value);
+        const answer = parseFloat(fieldset.dataset.answer ?? '0');
+        const tolerance = parseFloat(fieldset.dataset.tolerance ?? '0.5');
+        correct = !Number.isNaN(value) && Math.abs(value - answer) <= tolerance;
+        correctText = `${fieldset.dataset.answer}°`;
+      }
+
+      if (!answered[index]) {
+        answered[index] = true;
+        answeredCorrect[index] = correct;
+        if (correct) score += 1;
+      }
+
+      fieldset.querySelectorAll<HTMLInputElement>('input').forEach((el) => {
+        el.disabled = true;
+      });
+
+      if (feedback) {
+        feedback.className = `feedback ${correct ? 'is-correct' : 'is-incorrect'}`;
+        const icon = correct ? CHECK_ICON : X_ICON;
+        const lead = correct ? 'Correct.' : `Not quite — the correct answer is ${correctText}.`;
+        feedback.innerHTML = `${icon}<span>${lead} ${explanation}</span>`;
+      }
+
+      const checkBtn = fieldset.querySelector<HTMLButtonElement>('[data-check]');
+      const nextBtn = fieldset.querySelector<HTMLButtonElement>('[data-next]');
+      if (checkBtn) checkBtn.hidden = true;
+      if (nextBtn) {
+        nextBtn.hidden = false;
+        nextBtn.focus();
+      }
+    }
+
+    function showResults(): void {
+      quizBody!.hidden = true;
+      resultsPanel!.hidden = false;
+
+      const best = loadBestScore(total);
+      const isNewBest = score > best;
+      if (isNewBest) saveBestScore(score, total);
+      const bestToShow = isNewBest ? score : best;
+
+      resultsScoreEl!.textContent = `You scored ${score} out of ${total}.`;
+      resultsBestEl!.textContent = isNewBest
+        ? 'New best score!'
+        : `Best score so far: ${bestToShow} out of ${total}.`;
+
+      const missedConcepts = new Set<string>();
+      questionEls.forEach((fs, i) => {
+        if (!answeredCorrect[i] && fs.dataset.concept) missedConcepts.add(fs.dataset.concept);
+      });
+
+      resultsReviewEl!.innerHTML = '';
+      if (missedConcepts.size === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'Great work — you got every concept right!';
+        resultsReviewEl!.appendChild(li);
+      } else {
+        missedConcepts.forEach((c) => {
+          const li = document.createElement('li');
+          li.textContent = CONCEPT_LABELS[c] ?? c;
+          resultsReviewEl!.appendChild(li);
+        });
+      }
+
+      resultsPanel!.querySelector('h3')?.setAttribute('tabindex', '-1');
+      (resultsPanel!.querySelector('h3') as HTMLElement | null)?.focus();
+    }
+
+    function resetQuiz(): void {
+      current = 0;
+      score = 0;
+      for (let i = 0; i < total; i++) {
+        answered[i] = false;
+        answeredCorrect[i] = false;
+      }
+      questionEls.forEach((fs) => resetQuestionUI(fs));
+      optionGroups().forEach((g) => shuffleChildren(g));
+      resultsPanel!.hidden = true;
+      quizBody!.hidden = false;
+      showQuestion(0);
+    }
+
+    questionEls.forEach((fieldset, index) => {
+      const checkBtn = fieldset.querySelector<HTMLButtonElement>('[data-check]');
+      const nextBtn = fieldset.querySelector<HTMLButtonElement>('[data-next]');
+      const numInput = fieldset.querySelector<HTMLInputElement>('[data-numeric-input]');
+
+      fieldset.addEventListener('change', (e: Event) => {
+        const target = e.target as HTMLElement | null;
+        if (target && target instanceof HTMLInputElement && target.type === 'radio') {
+          fieldset.querySelectorAll('.option').forEach((el) => el.classList.remove('is-selected'));
+          target.closest('.option')?.classList.add('is-selected');
+        }
+        updateCheckEnabled(fieldset);
+      });
+
+      if (numInput) {
+        numInput.addEventListener('input', () => updateCheckEnabled(fieldset));
+      }
+
+      checkBtn?.addEventListener('click', () => checkAnswer(fieldset, index));
+
+      nextBtn?.addEventListener('click', () => {
+        if (index === total - 1) {
+          showResults();
+          return;
+        }
+        current = index + 1;
+        showQuestion(current);
+        const nextFieldset = questionEls[current];
+        const legend = nextFieldset.querySelector<HTMLElement>('legend');
+        if (legend) {
+          legend.setAttribute('tabindex', '-1');
+          legend.focus();
+        }
+      });
+    });
+
+    retryBtn.addEventListener('click', () => resetQuiz());
+
+    optionGroups().forEach((g) => shuffleChildren(g));
+    questionEls.forEach((fs) => resetQuestionUI(fs));
+    showQuestion(0);
+  }
+
+  initExplorer();
+  initQuiz();
+</script>

@@ -1,0 +1,1330 @@
+---
+// MarsExplorer.astro
+// Self-contained interactive: rotating Mars globe, Earth/Mars comparison,
+// a "weight on Mars" calculator, a mission timeline, and a quick-facts strip.
+// No network egress: all art is inline SVG/CSS. No UI framework.
+//
+// Figures cross-checked against NASA/NSSDCA planetary fact sheets.
+// Mars surface gravity ratio (0.3794) = 3.721 m/s² ÷ 9.80665 m/s².
+
+interface Hotspot {
+  id: string;
+  label: string;
+  fact: string;
+  x: number; // position, % of the globe frame
+  y: number;
+}
+
+const hotspots: Hotspot[] = [
+  {
+    id: 'olympus',
+    label: 'Olympus Mons',
+    fact:
+      "the largest volcano and tallest planetary mountain known in the Solar System — about 21.9 km high and roughly as wide as Arizona.",
+    x: 27,
+    y: 38,
+  },
+  {
+    id: 'valles',
+    label: 'Valles Marineris',
+    fact:
+      'a canyon system stretching nearly 4,000 km and up to 7 km deep — several times longer and deeper than the Grand Canyon.',
+    x: 56,
+    y: 57,
+  },
+  {
+    id: 'hellas',
+    label: 'Hellas Planitia',
+    fact:
+      'a giant impact basin about 2,300 km across and roughly 7 km deep, one of the largest confirmed impact craters in the Solar System.',
+    x: 74,
+    y: 66,
+  },
+  {
+    id: 'poles',
+    label: 'Polar Ice Caps',
+    fact:
+      "layers of water ice at both poles. The southern cap also keeps a thin, permanent skin of frozen carbon dioxide that grows and shrinks with the seasons.",
+    x: 50,
+    y: 11,
+  },
+];
+
+interface GasShare {
+  name: string;
+  pct: number;
+}
+
+interface CompareBase {
+  id: string;
+  label: string;
+  note: string;
+}
+
+interface CompareBar extends CompareBase {
+  kind: 'bar';
+  earthValue: number;
+  marsValue: number;
+  earthDisplay: string;
+  marsDisplay: string;
+}
+
+interface CompareGauge extends CompareBase {
+  kind: 'gauge';
+  min: number;
+  max: number;
+  earthValue: number;
+  marsValue: number;
+  earthDisplay: string;
+  marsDisplay: string;
+}
+
+interface CompareComposition extends CompareBase {
+  kind: 'composition';
+  earthPressure: number;
+  marsPressure: number;
+  earthPressureDisplay: string;
+  marsPressureDisplay: string;
+  earthGases: GasShare[];
+  marsGases: GasShare[];
+}
+
+type CompareMetric = CompareBar | CompareGauge | CompareComposition;
+
+const compareMetrics: CompareMetric[] = [
+  {
+    id: 'diameter',
+    label: 'Diameter',
+    kind: 'bar',
+    earthValue: 12742,
+    marsValue: 6779,
+    earthDisplay: '12,742 km',
+    marsDisplay: '6,779 km',
+    note: "Mars's diameter is about 53% of Earth's.",
+  },
+  {
+    id: 'mass',
+    label: 'Mass',
+    kind: 'bar',
+    earthValue: 5.972,
+    marsValue: 0.6417,
+    earthDisplay: '5.97 × 10²⁴ kg',
+    marsDisplay: '6.42 × 10²³ kg',
+    note: "Mars has roughly one-ninth (10.7%) of Earth's mass.",
+  },
+  {
+    id: 'gravity',
+    label: 'Surface gravity',
+    kind: 'bar',
+    earthValue: 9.81,
+    marsValue: 3.72,
+    earthDisplay: '9.81 m/s² (1 g)',
+    marsDisplay: '3.72 m/s² (0.38 g)',
+    note: "A 70 kg person would weigh the equivalent of about 26.6 kg on Mars.",
+  },
+  {
+    id: 'day',
+    label: 'Day length',
+    kind: 'bar',
+    earthValue: 24,
+    marsValue: 24.6597,
+    earthDisplay: '24h 00m',
+    marsDisplay: '24h 39m 35s',
+    note: 'A Martian day (a "sol") is about 40 minutes longer than an Earth day.',
+  },
+  {
+    id: 'year',
+    label: 'Year length',
+    kind: 'bar',
+    earthValue: 365.25,
+    marsValue: 686.98,
+    earthDisplay: '365.25 Earth days',
+    marsDisplay: '687 Earth days (≈1.88 Earth years)',
+    note: 'Mars takes almost twice as long as Earth to complete one orbit of the Sun.',
+  },
+  {
+    id: 'temperature',
+    label: 'Mean temperature',
+    kind: 'gauge',
+    min: -140,
+    max: 30,
+    earthValue: 15,
+    marsValue: -63,
+    earthDisplay: '15°C (59°F) average',
+    marsDisplay: '-63°C (-81°F) average',
+    note: 'Mars ranges from about -140°C at the winter poles to 20°C near the equator at noon.',
+  },
+  {
+    id: 'atmosphere',
+    label: 'Atmosphere',
+    kind: 'composition',
+    earthPressure: 101.3,
+    marsPressure: 0.636,
+    earthPressureDisplay: '101.3 kPa (1 atm)',
+    marsPressureDisplay: "≈0.6 kPa (about 0.6% of Earth's)",
+    earthGases: [
+      { name: 'Nitrogen', pct: 78.1 },
+      { name: 'Oxygen', pct: 20.9 },
+      { name: 'Argon & other', pct: 1.0 },
+    ],
+    marsGases: [
+      { name: 'Carbon dioxide', pct: 95.3 },
+      { name: 'Nitrogen', pct: 2.7 },
+      { name: 'Argon & other', pct: 2.0 },
+    ],
+    note: "Mars's thin air is mostly carbon dioxide; Earth's is mostly nitrogen and oxygen.",
+  },
+  {
+    id: 'moons',
+    label: 'Moons',
+    kind: 'bar',
+    earthValue: 1,
+    marsValue: 2,
+    earthDisplay: '1 (the Moon)',
+    marsDisplay: '2 (Phobos & Deimos)',
+    note: 'Phobos and Deimos are small, irregularly shaped moons, likely captured asteroids.',
+  },
+];
+
+function widthPct(value: number, max: number): number {
+  if (max <= 0) return 0;
+  return Math.max(2, Math.min(100, (value / max) * 100));
+}
+
+function gaugePct(value: number, min: number, max: number): number {
+  return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+}
+
+interface QuickFact {
+  label: string;
+  value: string;
+}
+
+const quickFacts: QuickFact[] = [
+  { label: 'Sol (day) length', value: '24h 39m 35s' },
+  { label: 'Distance from Sun', value: '≈227.9 million km (1.52 AU)' },
+  { label: 'Orbital period', value: '687 Earth days (≈1.88 years)' },
+  { label: 'Moons', value: 'Phobos & Deimos' },
+  { label: 'Why it looks red', value: 'Iron oxide (rust) dust coats the surface' },
+  { label: 'Atmosphere', value: "Thin CO₂ air, ≈0.6% of Earth's pressure" },
+];
+
+interface MissionEntry {
+  year: string;
+  agency: string;
+  mission: string;
+  blurb: string;
+}
+
+const missions: MissionEntry[] = [
+  {
+    year: '1965',
+    agency: 'NASA',
+    mission: 'Mariner 4',
+    blurb:
+      "First successful Mars flyby — returned humanity's first close-up images of another planet.",
+  },
+  {
+    year: '1976',
+    agency: 'NASA',
+    mission: 'Viking 1 & Viking 2',
+    blurb:
+      'First successful landers on Mars; imaged the surface and ran the first on-site search for microbial life.',
+  },
+  {
+    year: '1997',
+    agency: 'NASA',
+    mission: 'Pathfinder & Sojourner',
+    blurb:
+      'First wheeled rover on Mars, delivered by an airbag landing — proved low-cost robotic exploration works.',
+  },
+  {
+    year: '2003',
+    agency: 'ESA',
+    mission: 'Mars Express',
+    blurb:
+      "Europe's first Mars mission; its orbiter is still active and helped confirm water ice near the poles.",
+  },
+  {
+    year: '2004',
+    agency: 'NASA',
+    mission: 'Spirit & Opportunity',
+    blurb:
+      'Twin rovers found geologic proof that liquid water once flowed on Mars; Opportunity worked almost 15 years.',
+  },
+  {
+    year: '2012',
+    agency: 'NASA',
+    mission: 'Curiosity',
+    blurb:
+      'Car-sized, nuclear-powered rover landed by "sky crane"; found evidence Mars once had conditions fit for microbial life.',
+  },
+  {
+    year: '2018',
+    agency: 'NASA',
+    mission: 'InSight',
+    blurb:
+      "Lander whose seismometer detected marsquakes, mapping Mars's deep interior for the first time.",
+  },
+  {
+    year: '2021',
+    agency: 'MBRSC (UAE)',
+    mission: 'Hope (Al Amal)',
+    blurb:
+      "The UAE's first interplanetary mission — an orbiter studying the Martian atmosphere and weather.",
+  },
+  {
+    year: '2021',
+    agency: 'CNSA',
+    mission: 'Tianwen-1 & Zhurong',
+    blurb:
+      "China's first Mars mission — orbited, landed, and roved successfully in a single attempt.",
+  },
+  {
+    year: '2021',
+    agency: 'NASA',
+    mission: 'Perseverance & Ingenuity',
+    blurb:
+      'Rover caching samples for future return to Earth; Ingenuity made the first powered flight on another planet.',
+  },
+];
+
+// True relative scale for the comparison SVG (Mars ≈ 0.532 × Earth's diameter).
+const EARTH_R = 64;
+const MARS_R = Math.round(EARTH_R * 0.532 * 100) / 100;
+const SCALE_BOTTOM = 152;
+const EARTH_CY = SCALE_BOTTOM - EARTH_R;
+const MARS_CY = SCALE_BOTTOM - MARS_R;
+---
+
+<section class="mx-root" aria-labelledby="mx-globe-heading">
+  <!-- 1. Rotating globe ------------------------------------------------ -->
+  <div class="mx-block mx-globe-block">
+    <h2 id="mx-globe-heading" class="mx-block-title">A closer look at Mars</h2>
+
+    <div class="mx-globe-layout">
+      <div class="mx-globe-frame">
+        <svg
+          class="mx-globe-svg"
+          viewBox="0 0 200 200"
+          role="img"
+          aria-labelledby="mx-globe-title mx-globe-desc"
+        >
+          <title id="mx-globe-title">Stylised, rotating illustration of Mars</title>
+          <desc id="mx-globe-desc">
+            An original diagram of Mars showing rust-coloured surface markings and
+            white polar ice caps, with four labelled points of interest below it.
+          </desc>
+          <defs>
+            <radialGradient id="mx-base-grad" cx="34%" cy="30%" r="80%">
+              <stop offset="0%" stop-color="var(--mx-dust-100)" />
+              <stop offset="35%" stop-color="var(--mx-rust-400)" />
+              <stop offset="70%" stop-color="var(--mx-rust-500)" />
+              <stop offset="100%" stop-color="var(--mx-rust-900)" />
+            </radialGradient>
+            <radialGradient id="mx-shade-grad" cx="68%" cy="72%" r="85%">
+              <stop offset="0%" stop-color="#000" stop-opacity="0" />
+              <stop offset="45%" stop-color="#000" stop-opacity="0" />
+              <stop offset="75%" stop-color="#000" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="#000" stop-opacity="0.82" />
+            </radialGradient>
+            <radialGradient id="mx-ice-grad" cx="50%" cy="35%" r="75%">
+              <stop offset="0%" stop-color="var(--mx-ice)" />
+              <stop offset="100%" stop-color="var(--mx-ice-shadow)" />
+            </radialGradient>
+            <clipPath id="mx-globe-clip">
+              <circle cx="100" cy="100" r="97" />
+            </clipPath>
+          </defs>
+
+          <g clip-path="url(#mx-globe-clip)">
+            <circle cx="100" cy="100" r="97" fill="url(#mx-base-grad)" />
+
+            <!-- Rotating surface band: one tile drawn once, reused via <use>
+                 so a -200 translate loops seamlessly. -->
+            <g class="mx-surface" id="mx-surface">
+              <g id="mx-tile" fill-opacity="0.5">
+                <ellipse cx="40" cy="72" rx="34" ry="14" transform="rotate(-12 40 72)" fill="var(--mx-rust-700)" />
+                <ellipse cx="92" cy="112" rx="46" ry="18" transform="rotate(8 92 112)" fill="var(--mx-rust-900)" fill-opacity="0.8" />
+                <ellipse cx="152" cy="58" rx="26" ry="11" transform="rotate(18 152 58)" fill="var(--mx-rust-700)" />
+                <ellipse cx="24" cy="132" rx="20" ry="9" transform="rotate(-6 24 132)" fill="var(--mx-dust-200)" fill-opacity="0.7" />
+                <ellipse cx="122" cy="152" rx="30" ry="12" transform="rotate(-15 122 152)" fill="var(--mx-rust-900)" fill-opacity="0.6" />
+                <ellipse cx="68" cy="42" rx="18" ry="8" transform="rotate(10 68 42)" fill="var(--mx-dust-200)" fill-opacity="0.6" />
+                <ellipse cx="176" cy="122" rx="22" ry="10" transform="rotate(-10 176 122)" fill="var(--mx-rust-700)" />
+                <ellipse cx="10" cy="96" rx="13" ry="7" fill="var(--mx-rust-900)" fill-opacity="0.5" />
+                <ellipse cx="190" cy="90" rx="15" ry="7" transform="rotate(14 190 90)" fill="var(--mx-dust-200)" fill-opacity="0.5" />
+              </g>
+              <use href="#mx-tile" x="200" />
+            </g>
+
+            <!-- Poles sit on the rotation axis, so they stay fixed on screen. -->
+            <ellipse class="mx-ice-cap" cx="100" cy="17" rx="44" ry="15" fill="url(#mx-ice-grad)" />
+            <ellipse class="mx-ice-cap" cx="100" cy="184" rx="38" ry="13" fill="url(#mx-ice-grad)" />
+
+            <!-- Fixed lighting: limb darkening / terminator, independent of rotation. -->
+            <circle cx="100" cy="100" r="97" fill="url(#mx-shade-grad)" />
+          </g>
+          <circle cx="100" cy="100" r="97" fill="none" class="mx-globe-outline" />
+        </svg>
+
+        {
+          hotspots.map((h) => (
+            <button
+              type="button"
+              class="mx-hotspot"
+              style={`--hx:${h.x}%;--hy:${h.y}%`}
+              data-mx-hotspot
+              data-label={h.label}
+              data-fact={h.fact}
+              aria-label={h.label}
+            >
+              <span class="mx-hotspot-dot" aria-hidden="true" />
+              <span class="mx-hotspot-text">{h.label}</span>
+            </button>
+          ))
+        }
+      </div>
+
+      <p class="mx-tooltip" data-mx-tip aria-live="polite">
+        Hover or focus a labelled point on Mars to learn what it is.
+      </p>
+    </div>
+  </div>
+
+  <!-- Quick facts strip -------------------------------------------------->
+  <ul class="mx-facts" role="list" aria-label="Quick facts about Mars">
+    {
+      quickFacts.map((f) => (
+        <li class="mx-fact">
+          <span class="mx-fact-label">{f.label}</span>
+          <span class="mx-fact-value">{f.value}</span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <!-- 2. Earth ⇄ Mars comparison ---------------------------------------->
+  <div class="mx-block">
+    <h2 class="mx-block-title">Earth, meet Mars</h2>
+    <p class="mx-block-lede">
+      Both worlds drawn to the same true scale — Mars's diameter is about
+      53% of Earth's.
+    </p>
+
+    <div class="mx-compare">
+      <svg
+        class="mx-scale-svg"
+        viewBox="0 0 280 175"
+        role="img"
+        aria-labelledby="mx-scale-title"
+      >
+        <title id="mx-scale-title">
+          Earth and Mars drawn at true relative scale; Mars is about 53% of Earth's diameter
+        </title>
+        <defs>
+          <radialGradient id="mx-earth-grad" cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="var(--mx-earth-cloud)" />
+            <stop offset="30%" stop-color="var(--mx-earth-ocean)" />
+            <stop offset="100%" stop-color="var(--mx-earth-ocean-deep)" />
+          </radialGradient>
+          <radialGradient id="mx-mars-small-grad" cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="var(--mx-dust-100)" />
+            <stop offset="45%" stop-color="var(--mx-rust-400)" />
+            <stop offset="100%" stop-color="var(--mx-rust-900)" />
+          </radialGradient>
+          <clipPath id="mx-earth-clip">
+            <circle cx={85} cy={EARTH_CY} r={EARTH_R} />
+          </clipPath>
+        </defs>
+
+        <circle cx={85} cy={EARTH_CY} r={EARTH_R} fill="url(#mx-earth-grad)" />
+        <g clip-path="url(#mx-earth-clip)" opacity="0.9">
+          <ellipse cx="65" cy={EARTH_CY - 18} rx="22" ry="14" fill="var(--mx-earth-land)" transform={`rotate(-10 65 ${EARTH_CY - 18})`} />
+          <ellipse cx="108" cy={EARTH_CY + 20} rx="18" ry="24" fill="var(--mx-earth-land-dark)" transform={`rotate(12 108 ${EARTH_CY + 20})`} />
+          <ellipse cx="55" cy={EARTH_CY + 30} rx="14" ry="9" fill="var(--mx-earth-land)" />
+        </g>
+        <circle cx={85} cy={EARTH_CY} r={EARTH_R} fill="none" class="mx-globe-outline" />
+        <text x="85" y={SCALE_BOTTOM + 18} class="mx-scale-label">Earth</text>
+        <text x="85" y={SCALE_BOTTOM + 31} class="mx-scale-sub">12,742 km</text>
+
+        <circle cx={205} cy={MARS_CY} r={MARS_R} fill="url(#mx-mars-small-grad)" />
+        <circle cx={205} cy={MARS_CY} r={MARS_R} fill="none" class="mx-globe-outline" />
+        <text x="205" y={SCALE_BOTTOM + 18} class="mx-scale-label">Mars</text>
+        <text x="205" y={SCALE_BOTTOM + 31} class="mx-scale-sub">6,779 km</text>
+      </svg>
+
+      <div class="mx-compare-panel">
+        <label class="mx-slider-label" for="mx-metric-slider">
+          Compare a measurement
+        </label>
+        <input
+          type="range"
+          id="mx-metric-slider"
+          min="0"
+          max={compareMetrics.length - 1}
+          step="1"
+          value="0"
+          data-mx-slider
+          aria-valuetext={compareMetrics[0].label}
+          list="mx-metric-ticks"
+        />
+        <datalist id="mx-metric-ticks">
+          {compareMetrics.map((_m, i) => <option value={i}></option>)}
+        </datalist>
+        <div class="mx-slider-ticks" aria-hidden="true">
+          {compareMetrics.map((m) => <span>{m.label}</span>)}
+        </div>
+
+        {
+          compareMetrics.map((m, i) => (
+            <div
+              class="mx-panel"
+              data-mx-panel
+              data-metric-name={m.label}
+              hidden={i !== 0}
+            >
+              <h3 class="mx-panel-title">{m.label}</h3>
+
+              {m.kind === 'bar' && (
+                <div class="mx-bars">
+                  <div class="mx-bar-row">
+                    <span class="mx-bar-tag mx-bar-tag--earth">Earth</span>
+                    <span class="mx-bar-track">
+                      <span
+                        class="mx-bar-fill mx-bar-fill--earth"
+                        style={`width:${widthPct(m.earthValue, Math.max(m.earthValue, m.marsValue))}%`}
+                      />
+                    </span>
+                    <span class="mx-bar-value">{m.earthDisplay}</span>
+                  </div>
+                  <div class="mx-bar-row">
+                    <span class="mx-bar-tag mx-bar-tag--mars">Mars</span>
+                    <span class="mx-bar-track">
+                      <span
+                        class="mx-bar-fill mx-bar-fill--mars"
+                        style={`width:${widthPct(m.marsValue, Math.max(m.earthValue, m.marsValue))}%`}
+                      />
+                    </span>
+                    <span class="mx-bar-value">{m.marsDisplay}</span>
+                  </div>
+                </div>
+              )}
+
+              {m.kind === 'gauge' && (
+                <div class="mx-gauge">
+                  <div class="mx-gauge-track">
+                    <span
+                      class="mx-gauge-mark mx-gauge-mark--earth"
+                      style={`left:${gaugePct(m.earthValue, m.min, m.max)}%`}
+                    />
+                    <span
+                      class="mx-gauge-mark mx-gauge-mark--mars"
+                      style={`left:${gaugePct(m.marsValue, m.min, m.max)}%`}
+                    />
+                  </div>
+                  <div class="mx-gauge-labels">
+                    <span><span class="mx-dot mx-dot--earth" aria-hidden="true" /> Earth: {m.earthDisplay}</span>
+                    <span><span class="mx-dot mx-dot--mars" aria-hidden="true" /> Mars: {m.marsDisplay}</span>
+                  </div>
+                </div>
+              )}
+
+              {m.kind === 'composition' && (
+                <div class="mx-composition">
+                  <div class="mx-bar-row">
+                    <span class="mx-bar-tag mx-bar-tag--earth">Earth</span>
+                    <span class="mx-bar-track">
+                      <span
+                        class="mx-bar-fill mx-bar-fill--earth"
+                        style={`width:${widthPct(m.earthPressure, Math.max(m.earthPressure, m.marsPressure))}%`}
+                      />
+                    </span>
+                    <span class="mx-bar-value">{m.earthPressureDisplay}</span>
+                  </div>
+                  <div class="mx-bar-row">
+                    <span class="mx-bar-tag mx-bar-tag--mars">Mars</span>
+                    <span class="mx-bar-track">
+                      <span
+                        class="mx-bar-fill mx-bar-fill--mars"
+                        style={`width:${widthPct(m.marsPressure, Math.max(m.earthPressure, m.marsPressure))}%`}
+                      />
+                    </span>
+                    <span class="mx-bar-value">{m.marsPressureDisplay}</span>
+                  </div>
+
+                  <div class="mx-gas-legends">
+                    <div class="mx-gas-col">
+                      <p class="mx-gas-heading">Earth's air</p>
+                      <ul role="list">
+                        {m.earthGases.map((g) => (
+                          <li>
+                            <span class="mx-dot mx-dot--earth" aria-hidden="true" />
+                            {g.name} — {g.pct}%
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div class="mx-gas-col">
+                      <p class="mx-gas-heading">Mars's air</p>
+                      <ul role="list">
+                        {m.marsGases.map((g) => (
+                          <li>
+                            <span class="mx-dot mx-dot--mars" aria-hidden="true" />
+                            {g.name} — {g.pct}%
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <p class="mx-panel-note">{m.note}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Weight on Mars --------------------------------------------------->
+  <div class="mx-block">
+    <h2 class="mx-block-title">Your weight on Mars</h2>
+    <p class="mx-block-lede">
+      Mars's surface gravity is about 0.3794 × Earth's, so anything you weigh
+      here would weigh less there.
+    </p>
+
+    <div class="mx-weight">
+      <div class="mx-weight-field">
+        <label for="mx-weight-input">Your weight</label>
+        <input
+          type="number"
+          id="mx-weight-input"
+          inputmode="decimal"
+          min="0"
+          step="any"
+          placeholder="e.g. 70"
+          data-mx-weight-input
+          aria-describedby="mx-weight-result"
+        />
+      </div>
+      <div class="mx-unit-toggle" role="group" aria-label="Weight unit">
+        <button type="button" data-mx-unit="kg" aria-pressed="true">kg</button>
+        <button type="button" data-mx-unit="lb" aria-pressed="false">lb</button>
+      </div>
+    </div>
+    <p class="mx-weight-result" id="mx-weight-result" data-mx-weight-result aria-live="polite">
+      Enter a positive weight above to see what it would be on Mars.
+    </p>
+  </div>
+
+  <!-- 4. Mission timeline --------------------------------------------------->
+  <div class="mx-block">
+    <h2 class="mx-block-title">Getting there: major Mars missions</h2>
+    <p class="mx-block-lede">
+      Scroll or use the arrow keys to move along the timeline.
+    </p>
+
+    <ul class="mx-timeline" role="list" data-mx-timeline aria-label="Timeline of Mars missions">
+      {
+        missions.map((m) => (
+          <li class="mx-entry-item">
+            <button
+              type="button"
+              class="mx-entry"
+              data-mx-entry
+              aria-label={`${m.year}, ${m.agency}, ${m.mission}: ${m.blurb}`}
+            >
+              <span class="mx-entry-year">{m.year}</span>
+              <span class="mx-entry-agency">{m.agency}</span>
+              <span class="mx-entry-mission">{m.mission}</span>
+              <span class="mx-entry-blurb">{m.blurb}</span>
+            </button>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <p class="mx-credit">
+    Illustrations are original diagrams, not photography. Mission and
+    planetary data adapted from NASA's Mars exploration program — the
+    original version of this page displayed imagery via NASA's
+    Visualization Technology Applications and Development (VTAD).
+  </p>
+</section>
+
+<style>
+  /* ---- Local subject-matter palette (not UI chrome) ------------------ */
+  .mx-root {
+    --mx-rust-900: #6b280f;
+    --mx-rust-700: #9c3f18;
+    --mx-rust-500: #c1602f;
+    --mx-rust-400: #d67a44;
+    --mx-dust-200: #efc79a;
+    --mx-dust-100: #f7e2c4;
+    --mx-ice: #f4f8ff;
+    --mx-ice-shadow: #cfd9ea;
+
+    --mx-earth-ocean: #1f5fa8;
+    --mx-earth-ocean-deep: #123c6e;
+    --mx-earth-land: #3f8f4f;
+    --mx-earth-land-dark: #2c6b39;
+    --mx-earth-cloud: #f4f7fb;
+
+    display: block;
+    color: var(--text);
+  }
+
+  :global([data-theme='dark']) .mx-root {
+    --mx-rust-900: #4a2013;
+    --mx-rust-700: #6b3420;
+    --mx-rust-500: #8a4b2e;
+    --mx-rust-400: #9c5f3d;
+    --mx-dust-200: #b98f68;
+    --mx-dust-100: #c7a688;
+    --mx-ice: #cdd6e3;
+    --mx-ice-shadow: #9aa6b8;
+
+    --mx-earth-ocean: #2a4d78;
+    --mx-earth-ocean-deep: #1a324f;
+    --mx-earth-land: #3d6b46;
+    --mx-earth-land-dark: #2b4d33;
+    --mx-earth-cloud: #c9d2dd;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .mx-root {
+      --mx-rust-900: #4a2013;
+      --mx-rust-700: #6b3420;
+      --mx-rust-500: #8a4b2e;
+      --mx-rust-400: #9c5f3d;
+      --mx-dust-200: #b98f68;
+      --mx-dust-100: #c7a688;
+      --mx-ice: #cdd6e3;
+      --mx-ice-shadow: #9aa6b8;
+
+      --mx-earth-ocean: #2a4d78;
+      --mx-earth-ocean-deep: #1a324f;
+      --mx-earth-land: #3d6b46;
+      --mx-earth-land-dark: #2b4d33;
+      --mx-earth-cloud: #c9d2dd;
+    }
+  }
+
+  .mx-root > * + * {
+    margin-top: var(--sp-8);
+  }
+
+  .mx-block-title {
+    font-size: var(--fs-xl);
+    font-weight: 500;
+    margin-bottom: var(--sp-2);
+  }
+
+  .mx-block-lede {
+    max-width: 60ch;
+    color: var(--text-muted);
+    margin-bottom: var(--sp-5);
+  }
+
+  /* ---- Globe ----------------------------------------------------------*/
+  .mx-globe-layout {
+    display: grid;
+    gap: var(--sp-5);
+    justify-items: center;
+  }
+
+  .mx-globe-frame {
+    position: relative;
+    width: min(280px, 72vw);
+    aspect-ratio: 1 / 1;
+  }
+
+  .mx-globe-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    filter: drop-shadow(var(--shadow-md));
+  }
+
+  .mx-globe-outline {
+    stroke: var(--border-strong);
+    stroke-width: 1;
+  }
+
+  .mx-surface {
+    animation: mx-rotate 48s linear infinite;
+  }
+
+  .mx-globe-frame:hover .mx-surface,
+  .mx-globe-frame:focus-within .mx-surface {
+    animation-play-state: paused;
+  }
+
+  @keyframes mx-rotate {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-200px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mx-surface {
+      animation: none;
+    }
+  }
+
+  .mx-hotspot {
+    position: absolute;
+    left: var(--hx);
+    top: var(--hy);
+    transform: translate(-50%, -50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.2em 0.5em 0.2em 0.2em;
+    border-radius: var(--r-full);
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+    transition: transform var(--dur-fast) var(--ease), border-color var(--dur) var(--ease);
+  }
+
+  .mx-hotspot:hover,
+  .mx-hotspot:focus-visible {
+    transform: translate(-50%, -50%) scale(1.06);
+    border-color: var(--accent-border);
+  }
+
+  .mx-hotspot-dot {
+    width: 0.7em;
+    height: 0.7em;
+    border-radius: var(--r-full);
+    background: var(--accent);
+    border: 2px solid var(--surface);
+    flex-shrink: 0;
+  }
+
+  .mx-hotspot-text {
+    white-space: nowrap;
+  }
+
+  @media (max-width: 480px) {
+    .mx-hotspot-text {
+      display: none;
+    }
+    .mx-hotspot {
+      padding: 0.3em;
+    }
+  }
+
+  .mx-tooltip {
+    min-height: 2.6em;
+    max-width: 46ch;
+    text-align: center;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+  }
+
+  /* ---- Quick facts ------------------------------------------------- */
+  .mx-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--sp-3);
+  }
+
+  .mx-fact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    padding: var(--sp-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+  }
+
+  .mx-fact-label {
+    font-size: var(--fs-xs);
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .mx-fact-value {
+    font-size: var(--fs-sm);
+    font-weight: 500;
+  }
+
+  /* ---- Comparison ---------------------------------------------------- */
+  .mx-compare {
+    display: grid;
+    gap: var(--sp-6);
+  }
+
+  @media (min-width: 760px) {
+    .mx-compare {
+      grid-template-columns: minmax(220px, 320px) 1fr;
+      align-items: start;
+    }
+  }
+
+  .mx-scale-svg {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .mx-scale-label {
+    text-anchor: middle;
+    font-size: 13px;
+    font-weight: 700;
+    fill: var(--text);
+  }
+
+  .mx-scale-sub {
+    text-anchor: middle;
+    font-size: 10px;
+    fill: var(--text-faint);
+  }
+
+  .mx-compare-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-5);
+  }
+
+  .mx-slider-label {
+    display: block;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    margin-bottom: var(--sp-2);
+  }
+
+  #mx-metric-slider {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+
+  .mx-slider-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 0.3em;
+  }
+
+  .mx-slider-ticks span {
+    flex: 1;
+    text-align: center;
+  }
+
+  .mx-slider-ticks span:first-child {
+    text-align: left;
+  }
+
+  .mx-slider-ticks span:last-child {
+    text-align: right;
+  }
+
+  .mx-panel {
+    margin-top: var(--sp-5);
+    padding-top: var(--sp-5);
+    border-top: 1px solid var(--border);
+  }
+
+  .mx-panel-title {
+    font-size: var(--fs-lg);
+    font-weight: 500;
+    margin-bottom: var(--sp-3);
+  }
+
+  .mx-bar-row {
+    display: grid;
+    grid-template-columns: 3.4em 1fr auto;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-2);
+  }
+
+  .mx-bar-tag {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+  }
+
+  .mx-bar-tag--earth {
+    color: var(--mx-earth-ocean);
+  }
+
+  .mx-bar-tag--mars {
+    color: var(--mx-rust-700);
+  }
+
+  :global([data-theme='dark']) .mx-bar-tag--earth,
+  :global([data-theme='dark']) .mx-bar-tag--mars {
+    color: var(--text);
+  }
+
+  .mx-bar-track {
+    height: 0.7em;
+    border-radius: var(--r-full);
+    background: var(--bg-sunken);
+    overflow: hidden;
+  }
+
+  .mx-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--r-full);
+    transition: width var(--dur-slow) var(--ease);
+  }
+
+  .mx-bar-fill--earth {
+    background: var(--mx-earth-ocean);
+  }
+
+  .mx-bar-fill--mars {
+    background: var(--mx-rust-500);
+  }
+
+  .mx-bar-value {
+    font-size: var(--fs-sm);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .mx-gauge-track {
+    position: relative;
+    height: 10px;
+    border-radius: var(--r-full);
+    background: linear-gradient(
+      90deg,
+      var(--mx-earth-ocean-deep),
+      var(--bg-sunken) 50%,
+      var(--mx-rust-500)
+    );
+    margin-block: var(--sp-4) var(--sp-3);
+  }
+
+  .mx-gauge-mark {
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, -50%);
+    background: var(--surface);
+    border: 2px solid var(--text);
+  }
+
+  .mx-gauge-mark--earth {
+    border-radius: var(--r-full);
+    border-color: var(--mx-earth-ocean);
+  }
+
+  .mx-gauge-mark--mars {
+    border-radius: var(--r-xs);
+    border-color: var(--mx-rust-700);
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  .mx-gauge-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-4);
+    font-size: var(--fs-sm);
+  }
+
+  .mx-dot {
+    display: inline-block;
+    width: 0.7em;
+    height: 0.7em;
+    border-radius: var(--r-full);
+    margin-right: 0.35em;
+    vertical-align: middle;
+  }
+
+  .mx-dot--earth {
+    background: var(--mx-earth-ocean);
+  }
+
+  .mx-dot--mars {
+    background: var(--mx-rust-500);
+  }
+
+  .mx-gas-legends {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-4);
+    margin-top: var(--sp-4);
+  }
+
+  .mx-gas-heading {
+    font-size: var(--fs-xs);
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: var(--sp-2);
+  }
+
+  .mx-gas-col ul {
+    display: grid;
+    gap: 0.3em;
+    font-size: var(--fs-sm);
+  }
+
+  .mx-panel-note {
+    margin-top: var(--sp-4);
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+  }
+
+  /* ---- Weight tool ----------------------------------------------------*/
+  .mx-weight {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-4);
+    align-items: end;
+  }
+
+  .mx-weight-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35em;
+  }
+
+  .mx-weight-field label {
+    font-size: var(--fs-sm);
+    font-weight: 500;
+  }
+
+  #mx-weight-input {
+    width: 10em;
+    padding: 0.6em 0.8em;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  #mx-weight-input:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .mx-unit-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-full);
+    overflow: hidden;
+  }
+
+  .mx-unit-toggle button {
+    padding: 0.6em 1.1em;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+
+  .mx-unit-toggle button[aria-pressed='true'] {
+    background: var(--accent);
+    color: var(--text-on-accent);
+  }
+
+  .mx-weight-result {
+    margin-top: var(--sp-4);
+    padding: var(--sp-4);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: var(--fs-base);
+  }
+
+  /* ---- Timeline -------------------------------------------------------*/
+  .mx-timeline {
+    display: flex;
+    gap: var(--sp-4);
+    overflow-x: auto;
+    padding-block: var(--sp-2) var(--sp-4);
+    scroll-snap-type: x proximity;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  .mx-entry-item {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  .mx-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+    width: 220px;
+    height: 100%;
+    padding: var(--sp-4);
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    transition: border-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+
+  .mx-entry:hover,
+  .mx-entry:focus-visible {
+    border-color: var(--accent-border);
+    transform: translateY(-2px);
+  }
+
+  .mx-entry-year {
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .mx-entry-agency {
+    font-size: var(--fs-xs);
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .mx-entry-mission {
+    font-size: var(--fs-base);
+    font-weight: 500;
+  }
+
+  .mx-entry-blurb {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ---- Credit -----------------------------------------------------------*/
+  .mx-credit {
+    font-size: var(--fs-xs);
+    color: var(--text-faint);
+    max-width: 70ch;
+  }
+</style>
+
+<script>
+  function prefersReducedMotion(): boolean {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  // ---- Globe hotspots: caption-style tooltip, announced via aria-live --
+  const tipEl = document.querySelector<HTMLParagraphElement>('[data-mx-tip]');
+  const tipDefaultText = tipEl?.textContent ?? '';
+  const hotspotButtons = document.querySelectorAll<HTMLButtonElement>('[data-mx-hotspot]');
+
+  hotspotButtons.forEach((btn) => {
+    const label = btn.dataset.label ?? '';
+    const fact = btn.dataset.fact ?? '';
+
+    const show = () => {
+      if (tipEl) tipEl.textContent = `${label}: ${fact}`;
+    };
+    const hide = () => {
+      if (tipEl) tipEl.textContent = tipDefaultText;
+    };
+
+    btn.addEventListener('mouseenter', show);
+    btn.addEventListener('focus', show);
+    btn.addEventListener('mouseleave', hide);
+    btn.addEventListener('blur', hide);
+  });
+
+  // ---- Earth ⇄ Mars comparison slider -----------------------------------
+  const slider = document.querySelector<HTMLInputElement>('[data-mx-slider]');
+  const panels = document.querySelectorAll<HTMLElement>('[data-mx-panel]');
+
+  function renderPanel(index: number): void {
+    panels.forEach((panel, i) => {
+      panel.hidden = i !== index;
+    });
+    const active = panels[index];
+    if (slider && active) {
+      slider.setAttribute('aria-valuetext', active.dataset.metricName ?? '');
+    }
+  }
+
+  if (slider) {
+    slider.addEventListener('input', () => {
+      renderPanel(Number(slider.value) || 0);
+    });
+  }
+
+  // ---- Weight on Mars calculator -----------------------------------------
+  const MARS_GRAVITY_RATIO = 0.3794;
+  const weightInput = document.querySelector<HTMLInputElement>('[data-mx-weight-input]');
+  const weightResult = document.querySelector<HTMLParagraphElement>('[data-mx-weight-result]');
+  const unitButtons = document.querySelectorAll<HTMLButtonElement>('[data-mx-unit]');
+  let currentUnit: 'kg' | 'lb' = 'kg';
+
+  function formatNumber(n: number): string {
+    return n >= 100 ? n.toFixed(0) : n.toFixed(1);
+  }
+
+  function updateWeight(): void {
+    if (!weightInput || !weightResult) return;
+    const raw = weightInput.value.trim();
+    const value = parseFloat(raw);
+
+    if (raw === '' || Number.isNaN(value) || !Number.isFinite(value) || value <= 0) {
+      weightResult.textContent = 'Enter a positive weight above to see what it would be on Mars.';
+      return;
+    }
+
+    const converted = value * MARS_GRAVITY_RATIO;
+    weightResult.textContent =
+      `${formatNumber(value)} ${currentUnit} on Earth ≈ ${formatNumber(converted)} ${currentUnit} on Mars ` +
+      `(Mars's surface gravity is about 38% of Earth's).`;
+  }
+
+  unitButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      currentUnit = btn.dataset.mxUnit === 'lb' ? 'lb' : 'kg';
+      unitButtons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      if (weightInput) weightInput.setAttribute('aria-label', `Your weight in ${currentUnit}`);
+      updateWeight();
+    });
+  });
+
+  weightInput?.addEventListener('input', updateWeight);
+
+  // ---- Mission timeline: arrow-key navigation ----------------------------
+  const timeline = document.querySelector<HTMLElement>('[data-mx-timeline]');
+  const entries = timeline
+    ? Array.from(timeline.querySelectorAll<HTMLButtonElement>('[data-mx-entry]'))
+    : [];
+
+  entries.forEach((entry, i) => {
+    entry.addEventListener('keydown', (event: KeyboardEvent) => {
+      let target: HTMLButtonElement | undefined;
+      if (event.key === 'ArrowRight') target = entries[i + 1];
+      else if (event.key === 'ArrowLeft') target = entries[i - 1];
+      else if (event.key === 'Home') target = entries[0];
+      else if (event.key === 'End') target = entries[entries.length - 1];
+
+      if (target) {
+        event.preventDefault();
+        target.focus();
+        target.scrollIntoView({
+          behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+          inline: 'center',
+          block: 'nearest',
+        });
+      }
+    });
+  });
+</script>

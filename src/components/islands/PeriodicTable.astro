@@ -1,0 +1,1917 @@
+---
+/**
+ * PeriodicTable.astro — a self-contained, dependency-free interactive
+ * periodic table for thefourcells.
+ *
+ * Everything (all 118 elements) is inlined below and rendered to static HTML at
+ * build time: no fetch, no CDN, no npm data package, no framework runtime.
+ * The <script> only attaches behaviour to DOM that already exists.
+ *
+ * Data notes
+ *  - `mass` uses IUPAC standard atomic weights, abridged to 5 significant
+ *    figures. Elements with no stable isotope use the bracketed mass number of
+ *    the most stable / best-characterised isotope, e.g. `[98]`.
+ *  - `en` is Pauling electronegativity; `null` where no value is defined.
+ *  - `melt` / `boil` are in kelvin at 1 atm. A few elements sublime (As, and
+ *    carbon in practice), so `boil` can sit below `melt`; the temperature view
+ *    treats that case as a sublimation point.
+ *  - Melting points for 100–103 are estimates; 104–118 have never been prepared
+ *    in bulk, so their thermal data and phase are recorded as unknown.
+ */
+
+type Category =
+  | 'alkali'
+  | 'alkaline'
+  | 'transition'
+  | 'posttransition'
+  | 'metalloid'
+  | 'nonmetal'
+  | 'halogen'
+  | 'noble'
+  | 'lanthanide'
+  | 'actinide';
+
+type Phase = 'solid' | 'liquid' | 'gas' | 'unknown';
+
+interface ChemicalElement {
+  /** Atomic number */
+  z: number;
+  sym: string;
+  name: string;
+  /** Standard atomic weight, or [mass number] when no stable isotope exists */
+  mass: string;
+  cat: Category;
+  /** IUPAC group 1–18; null for the f-block rows */
+  group: number | null;
+  period: number;
+  /** Ground-state electron configuration, noble-gas abbreviated */
+  cfg: string;
+  /** Pauling electronegativity */
+  en: number | null;
+  /** Phase at standard temperature and pressure */
+  phase: Phase;
+  /** Melting point, K */
+  melt: number | null;
+  /** Boiling point, K */
+  boil: number | null;
+  /** Electrons per shell, K→ outwards */
+  shells: number[];
+  desc: string;
+}
+
+const ELEMENTS: ChemicalElement[] = [
+  { z: 1, sym: 'H', name: 'Hydrogen', mass: '1.008', cat: 'nonmetal', group: 1, period: 1, cfg: '1s¹', en: 2.2, phase: 'gas', melt: 13.99, boil: 20.27, shells: [1], desc: 'The lightest element; fuels stars and makes up most atoms in the universe.' },
+  { z: 2, sym: 'He', name: 'Helium', mass: '4.0026', cat: 'noble', group: 18, period: 1, cfg: '1s²', en: null, phase: 'gas', melt: 0.95, boil: 4.22, shells: [2], desc: 'Inert, ultralight noble gas and the second most abundant element in the cosmos.' },
+  { z: 3, sym: 'Li', name: 'Lithium', mass: '6.94', cat: 'alkali', group: 1, period: 2, cfg: '[He] 2s¹', en: 0.98, phase: 'solid', melt: 453.65, boil: 1603, shells: [2, 1], desc: 'Soft, low-density metal at the heart of rechargeable batteries.' },
+  { z: 4, sym: 'Be', name: 'Beryllium', mass: '9.0122', cat: 'alkaline', group: 2, period: 2, cfg: '[He] 2s²', en: 1.57, phase: 'solid', melt: 1560, boil: 2742, shells: [2, 2], desc: 'Stiff, feather-light metal used in X-ray windows and aerospace alloys.' },
+  { z: 5, sym: 'B', name: 'Boron', mass: '10.81', cat: 'metalloid', group: 13, period: 2, cfg: '[He] 2s² 2p¹', en: 2.04, phase: 'solid', melt: 2349, boil: 4200, shells: [2, 3], desc: 'Metalloid that toughens borosilicate glass and soaks up reactor neutrons.' },
+  { z: 6, sym: 'C', name: 'Carbon', mass: '12.011', cat: 'nonmetal', group: 14, period: 2, cfg: '[He] 2s² 2p²', en: 2.55, phase: 'solid', melt: 3823, boil: 4098, shells: [2, 4], desc: 'Backbone of all known life; forms diamond, graphite and graphene.' },
+  { z: 7, sym: 'N', name: 'Nitrogen', mass: '14.007', cat: 'nonmetal', group: 15, period: 2, cfg: '[He] 2s² 2p³', en: 3.04, phase: 'gas', melt: 63.15, boil: 77.36, shells: [2, 5], desc: 'Makes up 78% of air and is locked into every protein and fertiliser.' },
+  { z: 8, sym: 'O', name: 'Oxygen', mass: '15.999', cat: 'nonmetal', group: 16, period: 2, cfg: '[He] 2s² 2p⁴', en: 3.44, phase: 'gas', melt: 54.36, boil: 90.19, shells: [2, 6], desc: 'Drives respiration and combustion; the most abundant element in Earth’s crust.' },
+  { z: 9, sym: 'F', name: 'Fluorine', mass: '18.998', cat: 'halogen', group: 17, period: 2, cfg: '[He] 2s² 2p⁵', en: 3.98, phase: 'gas', melt: 53.48, boil: 85.03, shells: [2, 7], desc: 'The most electronegative element: a fiercely reactive pale-yellow gas.' },
+  { z: 10, sym: 'Ne', name: 'Neon', mass: '20.180', cat: 'noble', group: 18, period: 2, cfg: '[He] 2s² 2p⁶', en: null, phase: 'gas', melt: 24.56, boil: 27.10, shells: [2, 8], desc: 'Noble gas that glows a distinctive orange-red in advertising signs.' },
+  { z: 11, sym: 'Na', name: 'Sodium', mass: '22.990', cat: 'alkali', group: 1, period: 3, cfg: '[Ne] 3s¹', en: 0.93, phase: 'solid', melt: 370.94, boil: 1156.09, shells: [2, 8, 1], desc: 'Soft, violently reactive metal; one half of common table salt.' },
+  { z: 12, sym: 'Mg', name: 'Magnesium', mass: '24.305', cat: 'alkaline', group: 2, period: 3, cfg: '[Ne] 3s²', en: 1.31, phase: 'solid', melt: 923, boil: 1363, shells: [2, 8, 2], desc: 'Light structural metal and the central atom of every chlorophyll molecule.' },
+  { z: 13, sym: 'Al', name: 'Aluminium', mass: '26.982', cat: 'posttransition', group: 13, period: 3, cfg: '[Ne] 3s² 3p¹', en: 1.61, phase: 'solid', melt: 933.47, boil: 2743, shells: [2, 8, 3], desc: 'Abundant, corrosion-resistant metal used for everything from foil to airframes.' },
+  { z: 14, sym: 'Si', name: 'Silicon', mass: '28.085', cat: 'metalloid', group: 14, period: 3, cfg: '[Ne] 3s² 3p²', en: 1.9, phase: 'solid', melt: 1687, boil: 3538, shells: [2, 8, 4], desc: 'Semiconducting metalloid behind computer chips, glass and most rock.' },
+  { z: 15, sym: 'P', name: 'Phosphorus', mass: '30.974', cat: 'nonmetal', group: 15, period: 3, cfg: '[Ne] 3s² 3p³', en: 2.19, phase: 'solid', melt: 317.3, boil: 553.7, shells: [2, 8, 5], desc: 'Essential to DNA and ATP; its white allotrope ignites in open air.' },
+  { z: 16, sym: 'S', name: 'Sulfur', mass: '32.06', cat: 'nonmetal', group: 16, period: 3, cfg: '[Ne] 3s² 3p⁴', en: 2.58, phase: 'solid', melt: 388.36, boil: 717.8, shells: [2, 8, 6], desc: 'Yellow nonmetal of volcanoes, proteins and industrial sulfuric acid.' },
+  { z: 17, sym: 'Cl', name: 'Chlorine', mass: '35.45', cat: 'halogen', group: 17, period: 3, cfg: '[Ne] 3s² 3p⁵', en: 3.16, phase: 'gas', melt: 171.6, boil: 239.11, shells: [2, 8, 7], desc: 'Green toxic gas that disinfects drinking water worldwide.' },
+  { z: 18, sym: 'Ar', name: 'Argon', mass: '39.95', cat: 'noble', group: 18, period: 3, cfg: '[Ne] 3s² 3p⁶', en: null, phase: 'gas', melt: 83.81, boil: 87.30, shells: [2, 8, 8], desc: 'Inert gas that shields welding arcs and fills insulating double glazing.' },
+  { z: 19, sym: 'K', name: 'Potassium', mass: '39.098', cat: 'alkali', group: 1, period: 4, cfg: '[Ar] 4s¹', en: 0.82, phase: 'solid', melt: 336.7, boil: 1032, shells: [2, 8, 8, 1], desc: 'Reactive metal essential to nerve signalling and plant growth.' },
+  { z: 20, sym: 'Ca', name: 'Calcium', mass: '40.078', cat: 'alkaline', group: 2, period: 4, cfg: '[Ar] 4s²', en: 1.0, phase: 'solid', melt: 1115, boil: 1757, shells: [2, 8, 8, 2], desc: 'Builds bones, shells and limestone, and triggers every muscle contraction.' },
+  { z: 21, sym: 'Sc', name: 'Scandium', mass: '44.956', cat: 'transition', group: 3, period: 4, cfg: '[Ar] 3d¹ 4s²', en: 1.36, phase: 'solid', melt: 1814, boil: 3109, shells: [2, 8, 9, 2], desc: 'Rare, very light transition metal that strengthens aluminium alloys.' },
+  { z: 22, sym: 'Ti', name: 'Titanium', mass: '47.867', cat: 'transition', group: 4, period: 4, cfg: '[Ar] 3d² 4s²', en: 1.54, phase: 'solid', melt: 1941, boil: 3560, shells: [2, 8, 10, 2], desc: 'Strong, light and corrosion-proof: the metal of implants and jet engines.' },
+  { z: 23, sym: 'V', name: 'Vanadium', mass: '50.942', cat: 'transition', group: 5, period: 4, cfg: '[Ar] 3d³ 4s²', en: 1.63, phase: 'solid', melt: 2183, boil: 3680, shells: [2, 8, 11, 2], desc: 'Toughens steel, and gives its solutions a vivid range of colours.' },
+  { z: 24, sym: 'Cr', name: 'Chromium', mass: '51.996', cat: 'transition', group: 6, period: 4, cfg: '[Ar] 3d⁵ 4s¹', en: 1.66, phase: 'solid', melt: 2180, boil: 2944, shells: [2, 8, 13, 1], desc: 'Gives stainless steel its shine and rubies their deep red.' },
+  { z: 25, sym: 'Mn', name: 'Manganese', mass: '54.938', cat: 'transition', group: 7, period: 4, cfg: '[Ar] 3d⁵ 4s²', en: 1.55, phase: 'solid', melt: 1519, boil: 2334, shells: [2, 8, 13, 2], desc: 'Hardens steel and splits water inside the photosynthetic machinery of plants.' },
+  { z: 26, sym: 'Fe', name: 'Iron', mass: '55.845', cat: 'transition', group: 8, period: 4, cfg: '[Ar] 3d⁶ 4s²', en: 1.83, phase: 'solid', melt: 1811, boil: 3134, shells: [2, 8, 14, 2], desc: 'Core of the planet and of haemoglobin; civilisation’s workhorse metal.' },
+  { z: 27, sym: 'Co', name: 'Cobalt', mass: '58.933', cat: 'transition', group: 9, period: 4, cfg: '[Ar] 3d⁷ 4s²', en: 1.88, phase: 'solid', melt: 1768, boil: 3200, shells: [2, 8, 15, 2], desc: 'Magnetic metal found in vitamin B12 and in battery cathodes.' },
+  { z: 28, sym: 'Ni', name: 'Nickel', mass: '58.693', cat: 'transition', group: 10, period: 4, cfg: '[Ar] 3d⁸ 4s²', en: 1.91, phase: 'solid', melt: 1728, boil: 3003, shells: [2, 8, 16, 2], desc: 'Corrosion-resistant metal used in coins, magnets and stainless alloys.' },
+  { z: 29, sym: 'Cu', name: 'Copper', mass: '63.546', cat: 'transition', group: 11, period: 4, cfg: '[Ar] 3d¹⁰ 4s¹', en: 1.9, phase: 'solid', melt: 1357.77, boil: 2835, shells: [2, 8, 18, 1], desc: 'Reddish metal prized for conducting electricity and for killing microbes on contact.' },
+  { z: 30, sym: 'Zn', name: 'Zinc', mass: '65.38', cat: 'transition', group: 12, period: 4, cfg: '[Ar] 3d¹⁰ 4s²', en: 1.65, phase: 'solid', melt: 692.68, boil: 1180, shells: [2, 8, 18, 2], desc: 'Galvanises steel and acts as a cofactor in hundreds of enzymes.' },
+  { z: 31, sym: 'Ga', name: 'Gallium', mass: '69.723', cat: 'posttransition', group: 13, period: 4, cfg: '[Ar] 3d¹⁰ 4s² 4p¹', en: 1.81, phase: 'solid', melt: 302.91, boil: 2673, shells: [2, 8, 18, 3], desc: 'Melts in the warmth of your hand; powers LEDs and high-speed chips.' },
+  { z: 32, sym: 'Ge', name: 'Germanium', mass: '72.630', cat: 'metalloid', group: 14, period: 4, cfg: '[Ar] 3d¹⁰ 4s² 4p²', en: 2.01, phase: 'solid', melt: 1211.4, boil: 3106, shells: [2, 8, 18, 4], desc: 'Semiconducting metalloid used in infrared optics and fibre-optic glass.' },
+  { z: 33, sym: 'As', name: 'Arsenic', mass: '74.922', cat: 'metalloid', group: 15, period: 4, cfg: '[Ar] 3d¹⁰ 4s² 4p³', en: 2.18, phase: 'solid', melt: 1090, boil: 887, shells: [2, 8, 18, 5], desc: 'Notorious poison that doubles as a semiconductor dopant; it sublimes when heated.' },
+  { z: 34, sym: 'Se', name: 'Selenium', mass: '78.971', cat: 'nonmetal', group: 16, period: 4, cfg: '[Ar] 3d¹⁰ 4s² 4p⁴', en: 2.55, phase: 'solid', melt: 494, boil: 958, shells: [2, 8, 18, 6], desc: 'Light-sensitive nonmetal used in glass and needed by the body in traces.' },
+  { z: 35, sym: 'Br', name: 'Bromine', mass: '79.904', cat: 'halogen', group: 17, period: 4, cfg: '[Ar] 3d¹⁰ 4s² 4p⁵', en: 2.96, phase: 'liquid', melt: 265.8, boil: 332.0, shells: [2, 8, 18, 7], desc: 'The only nonmetal that is liquid at room temperature: dense, red-brown and fuming.' },
+  { z: 36, sym: 'Kr', name: 'Krypton', mass: '83.798', cat: 'noble', group: 18, period: 4, cfg: '[Ar] 3d¹⁰ 4s² 4p⁶', en: 3.0, phase: 'gas', melt: 115.78, boil: 119.93, shells: [2, 8, 18, 8], desc: 'Noble gas used in high-output lighting and photographic flash lamps.' },
+  { z: 37, sym: 'Rb', name: 'Rubidium', mass: '85.468', cat: 'alkali', group: 1, period: 5, cfg: '[Kr] 5s¹', en: 0.82, phase: 'solid', melt: 312.45, boil: 961, shells: [2, 8, 18, 8, 1], desc: 'Soft alkali metal used in atomic clocks and laser-cooling experiments.' },
+  { z: 38, sym: 'Sr', name: 'Strontium', mass: '87.62', cat: 'alkaline', group: 2, period: 5, cfg: '[Kr] 5s²', en: 0.95, phase: 'solid', melt: 1050, boil: 1650, shells: [2, 8, 18, 8, 2], desc: 'Alkaline earth metal that burns brilliant crimson in fireworks and flares.' },
+  { z: 39, sym: 'Y', name: 'Yttrium', mass: '88.906', cat: 'transition', group: 3, period: 5, cfg: '[Kr] 4d¹ 5s²', en: 1.22, phase: 'solid', melt: 1799, boil: 3609, shells: [2, 8, 18, 9, 2], desc: 'Rare-earth metal used in screen phosphors, lasers and superconductors.' },
+  { z: 40, sym: 'Zr', name: 'Zirconium', mass: '91.224', cat: 'transition', group: 4, period: 5, cfg: '[Kr] 4d² 5s²', en: 1.33, phase: 'solid', melt: 2128, boil: 4650, shells: [2, 8, 18, 10, 2], desc: 'Corrosion-proof metal that clads nuclear fuel rods; its oxide fakes diamond.' },
+  { z: 41, sym: 'Nb', name: 'Niobium', mass: '92.906', cat: 'transition', group: 5, period: 5, cfg: '[Kr] 4d⁴ 5s¹', en: 1.6, phase: 'solid', melt: 2750, boil: 5017, shells: [2, 8, 18, 12, 1], desc: 'Superconducting metal wound into MRI magnets and particle accelerators.' },
+  { z: 42, sym: 'Mo', name: 'Molybdenum', mass: '95.95', cat: 'transition', group: 6, period: 5, cfg: '[Kr] 4d⁵ 5s¹', en: 2.16, phase: 'solid', melt: 2896, boil: 4912, shells: [2, 8, 18, 13, 1], desc: 'High-melting metal that strengthens steel and drives biological nitrogen fixation.' },
+  { z: 43, sym: 'Tc', name: 'Technetium', mass: '[98]', cat: 'transition', group: 7, period: 5, cfg: '[Kr] 4d⁵ 5s²', en: 1.9, phase: 'solid', melt: 2430, boil: 4538, shells: [2, 8, 18, 13, 2], desc: 'The first artificially made element; one isotope images organs in hospitals daily.' },
+  { z: 44, sym: 'Ru', name: 'Ruthenium', mass: '101.07', cat: 'transition', group: 8, period: 5, cfg: '[Kr] 4d⁷ 5s¹', en: 2.2, phase: 'solid', melt: 2607, boil: 4423, shells: [2, 8, 18, 15, 1], desc: 'Hard platinum-group metal used in catalysts and hard-wearing electrical contacts.' },
+  { z: 45, sym: 'Rh', name: 'Rhodium', mass: '102.91', cat: 'transition', group: 9, period: 5, cfg: '[Kr] 4d⁸ 5s¹', en: 2.28, phase: 'solid', melt: 2237, boil: 3968, shells: [2, 8, 18, 16, 1], desc: 'Rarest of the precious metals; scrubs nitrogen oxides from car exhaust.' },
+  { z: 46, sym: 'Pd', name: 'Palladium', mass: '106.42', cat: 'transition', group: 10, period: 5, cfg: '[Kr] 4d¹⁰', en: 2.2, phase: 'solid', melt: 1828.05, boil: 3236, shells: [2, 8, 18, 18], desc: 'Soaks up hydrogen like a sponge and sits at the centre of modern catalysis.' },
+  { z: 47, sym: 'Ag', name: 'Silver', mass: '107.87', cat: 'transition', group: 11, period: 5, cfg: '[Kr] 4d¹⁰ 5s¹', en: 1.93, phase: 'solid', melt: 1234.93, boil: 2435, shells: [2, 8, 18, 18, 1], desc: 'The best electrical and thermal conductor of any element.' },
+  { z: 48, sym: 'Cd', name: 'Cadmium', mass: '112.41', cat: 'transition', group: 12, period: 5, cfg: '[Kr] 4d¹⁰ 5s²', en: 1.69, phase: 'solid', melt: 594.22, boil: 1040, shells: [2, 8, 18, 18, 2], desc: 'Toxic soft metal once common in bright pigments and rechargeable batteries.' },
+  { z: 49, sym: 'In', name: 'Indium', mass: '114.82', cat: 'posttransition', group: 13, period: 5, cfg: '[Kr] 4d¹⁰ 5s² 5p¹', en: 1.78, phase: 'solid', melt: 429.75, boil: 2345, shells: [2, 8, 18, 18, 3], desc: 'Soft metal behind the transparent indium tin oxide coating on touchscreens.' },
+  { z: 50, sym: 'Sn', name: 'Tin', mass: '118.71', cat: 'posttransition', group: 14, period: 5, cfg: '[Kr] 4d¹⁰ 5s² 5p²', en: 1.96, phase: 'solid', melt: 505.08, boil: 2875, shells: [2, 8, 18, 18, 4], desc: 'Ancient alloying metal: bronze, solder and the tin plating on cans.' },
+  { z: 51, sym: 'Sb', name: 'Antimony', mass: '121.76', cat: 'metalloid', group: 15, period: 5, cfg: '[Kr] 4d¹⁰ 5s² 5p³', en: 2.05, phase: 'solid', melt: 903.78, boil: 1908, shells: [2, 8, 18, 18, 5], desc: 'Brittle metalloid used in flame retardants and, historically, in type metal.' },
+  { z: 52, sym: 'Te', name: 'Tellurium', mass: '127.60', cat: 'metalloid', group: 16, period: 5, cfg: '[Kr] 4d¹⁰ 5s² 5p⁴', en: 2.1, phase: 'solid', melt: 722.66, boil: 1261, shells: [2, 8, 18, 18, 6], desc: 'Scarce metalloid used in thin-film solar cells and thermoelectric coolers.' },
+  { z: 53, sym: 'I', name: 'Iodine', mass: '126.90', cat: 'halogen', group: 17, period: 5, cfg: '[Kr] 4d¹⁰ 5s² 5p⁵', en: 2.66, phase: 'solid', melt: 386.85, boil: 457.4, shells: [2, 8, 18, 18, 7], desc: 'Violet-vapour halogen that the thyroid needs to build its hormones.' },
+  { z: 54, sym: 'Xe', name: 'Xenon', mass: '131.29', cat: 'noble', group: 18, period: 5, cfg: '[Kr] 4d¹⁰ 5s² 5p⁶', en: 2.6, phase: 'gas', melt: 161.40, boil: 165.05, shells: [2, 8, 18, 18, 8], desc: 'Heavy noble gas used in spacecraft ion thrusters and general anaesthesia.' },
+  { z: 55, sym: 'Cs', name: 'Caesium', mass: '132.91', cat: 'alkali', group: 1, period: 6, cfg: '[Xe] 6s¹', en: 0.79, phase: 'solid', melt: 301.7, boil: 944, shells: [2, 8, 18, 18, 8, 1], desc: 'Most reactive metal, and the atom whose vibration defines the SI second.' },
+  { z: 56, sym: 'Ba', name: 'Barium', mass: '137.33', cat: 'alkaline', group: 2, period: 6, cfg: '[Xe] 6s²', en: 0.89, phase: 'solid', melt: 1000, boil: 2118, shells: [2, 8, 18, 18, 8, 2], desc: 'Dense metal whose insoluble sulfate outlines the gut in medical X-rays.' },
+  { z: 57, sym: 'La', name: 'Lanthanum', mass: '138.91', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 5d¹ 6s²', en: 1.1, phase: 'solid', melt: 1193, boil: 3737, shells: [2, 8, 18, 18, 9, 2], desc: 'First of the lanthanides; used in camera lenses and hybrid-car batteries.' },
+  { z: 58, sym: 'Ce', name: 'Cerium', mass: '140.12', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f¹ 5d¹ 6s²', en: 1.12, phase: 'solid', melt: 1068, boil: 3716, shells: [2, 8, 18, 19, 9, 2], desc: 'The most abundant rare earth; polishes glass and catalyses exhaust clean-up.' },
+  { z: 59, sym: 'Pr', name: 'Praseodymium', mass: '140.91', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f³ 6s²', en: 1.13, phase: 'solid', melt: 1208, boil: 3403, shells: [2, 8, 18, 21, 8, 2], desc: 'Colours welders’ goggles and strengthens high-performance magnets.' },
+  { z: 60, sym: 'Nd', name: 'Neodymium', mass: '144.24', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f⁴ 6s²', en: 1.14, phase: 'solid', melt: 1297, boil: 3347, shells: [2, 8, 18, 22, 8, 2], desc: 'Makes the strongest permanent magnets ever produced.' },
+  { z: 61, sym: 'Pm', name: 'Promethium', mass: '[145]', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f⁵ 6s²', en: 1.13, phase: 'solid', melt: 1315, boil: 3273, shells: [2, 8, 18, 23, 8, 2], desc: 'The only radioactive lanthanide; once lit the dials of luminous watches.' },
+  { z: 62, sym: 'Sm', name: 'Samarium', mass: '150.36', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f⁶ 6s²', en: 1.17, phase: 'solid', melt: 1345, boil: 2173, shells: [2, 8, 18, 24, 8, 2], desc: 'Forms heat-resistant magnets and absorbs neutrons inside reactors.' },
+  { z: 63, sym: 'Eu', name: 'Europium', mass: '151.96', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f⁷ 6s²', en: 1.2, phase: 'solid', melt: 1099, boil: 1802, shells: [2, 8, 18, 25, 8, 2], desc: 'Red and blue phosphor in displays and in euro banknote security marks.' },
+  { z: 64, sym: 'Gd', name: 'Gadolinium', mass: '157.25', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f⁷ 5d¹ 6s²', en: 1.2, phase: 'solid', melt: 1585, boil: 3546, shells: [2, 8, 18, 25, 9, 2], desc: 'Strongly magnetic rare earth used as an MRI contrast agent.' },
+  { z: 65, sym: 'Tb', name: 'Terbium', mass: '158.93', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f⁹ 6s²', en: 1.2, phase: 'solid', melt: 1629, boil: 3503, shells: [2, 8, 18, 27, 8, 2], desc: 'Green phosphor rare earth that stretches measurably in a magnetic field.' },
+  { z: 66, sym: 'Dy', name: 'Dysprosium', mass: '162.50', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f¹⁰ 6s²', en: 1.22, phase: 'solid', melt: 1680, boil: 2840, shells: [2, 8, 18, 28, 8, 2], desc: 'Keeps high-temperature magnets in wind turbines and motors from weakening.' },
+  { z: 67, sym: 'Ho', name: 'Holmium', mass: '164.93', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f¹¹ 6s²', en: 1.23, phase: 'solid', melt: 1734, boil: 2993, shells: [2, 8, 18, 29, 8, 2], desc: 'Has the strongest magnetic moment of any element; used in surgical lasers.' },
+  { z: 68, sym: 'Er', name: 'Erbium', mass: '167.26', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f¹² 6s²', en: 1.24, phase: 'solid', melt: 1802, boil: 3141, shells: [2, 8, 18, 30, 8, 2], desc: 'Amplifies light inside the fibre-optic cables that carry the internet.' },
+  { z: 69, sym: 'Tm', name: 'Thulium', mass: '168.93', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f¹³ 6s²', en: 1.25, phase: 'solid', melt: 1818, boil: 2223, shells: [2, 8, 18, 31, 8, 2], desc: 'The rarest stable lanthanide; powers portable X-ray sources.' },
+  { z: 70, sym: 'Yb', name: 'Ytterbium', mass: '173.05', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f¹⁴ 6s²', en: 1.1, phase: 'solid', melt: 1097, boil: 1469, shells: [2, 8, 18, 32, 8, 2], desc: 'Soft rare earth at the heart of the most precise optical atomic clocks.' },
+  { z: 71, sym: 'Lu', name: 'Lutetium', mass: '174.97', cat: 'lanthanide', group: null, period: 6, cfg: '[Xe] 4f¹⁴ 5d¹ 6s²', en: 1.27, phase: 'solid', melt: 1925, boil: 3675, shells: [2, 8, 18, 32, 9, 2], desc: 'Densest and hardest lanthanide; grown into crystals for PET scanners.' },
+  { z: 72, sym: 'Hf', name: 'Hafnium', mass: '178.49', cat: 'transition', group: 4, period: 6, cfg: '[Xe] 4f¹⁴ 5d² 6s²', en: 1.3, phase: 'solid', melt: 2506, boil: 4876, shells: [2, 8, 18, 32, 10, 2], desc: 'Neutron-swallowing metal used in control rods and transistor gate insulators.' },
+  { z: 73, sym: 'Ta', name: 'Tantalum', mass: '180.95', cat: 'transition', group: 5, period: 6, cfg: '[Xe] 4f¹⁴ 5d³ 6s²', en: 1.5, phase: 'solid', melt: 3290, boil: 5731, shells: [2, 8, 18, 32, 11, 2], desc: 'Biocompatible metal that makes the tiny, reliable capacitors inside phones.' },
+  { z: 74, sym: 'W', name: 'Tungsten', mass: '183.84', cat: 'transition', group: 6, period: 6, cfg: '[Xe] 4f¹⁴ 5d⁴ 6s²', en: 2.36, phase: 'solid', melt: 3695, boil: 6203, shells: [2, 8, 18, 32, 12, 2], desc: 'Highest melting point of any metal: lamp filaments and carbide drill bits.' },
+  { z: 75, sym: 'Re', name: 'Rhenium', mass: '186.21', cat: 'transition', group: 7, period: 6, cfg: '[Xe] 4f¹⁴ 5d⁵ 6s²', en: 1.9, phase: 'solid', melt: 3459, boil: 5869, shells: [2, 8, 18, 32, 13, 2], desc: 'Ultra-rare metal alloyed into jet-engine blades and refinery catalysts.' },
+  { z: 76, sym: 'Os', name: 'Osmium', mass: '190.23', cat: 'transition', group: 8, period: 6, cfg: '[Xe] 4f¹⁴ 5d⁶ 6s²', en: 2.2, phase: 'solid', melt: 3306, boil: 5285, shells: [2, 8, 18, 32, 14, 2], desc: 'The densest naturally occurring element: extremely hard and brittle.' },
+  { z: 77, sym: 'Ir', name: 'Iridium', mass: '192.22', cat: 'transition', group: 9, period: 6, cfg: '[Xe] 4f¹⁴ 5d⁷ 6s²', en: 2.2, phase: 'solid', melt: 2719, boil: 4403, shells: [2, 8, 18, 32, 15, 2], desc: 'Corrosion-proof metal whose worldwide clay layer marks the dinosaur extinction.' },
+  { z: 78, sym: 'Pt', name: 'Platinum', mass: '195.08', cat: 'transition', group: 10, period: 6, cfg: '[Xe] 4f¹⁴ 5d⁹ 6s¹', en: 2.28, phase: 'solid', melt: 2041.4, boil: 4098, shells: [2, 8, 18, 32, 17, 1], desc: 'Precious catalyst metal used in converters and in cisplatin cancer drugs.' },
+  { z: 79, sym: 'Au', name: 'Gold', mass: '196.97', cat: 'transition', group: 11, period: 6, cfg: '[Xe] 4f¹⁴ 5d¹⁰ 6s¹', en: 2.54, phase: 'solid', melt: 1337.33, boil: 3243, shells: [2, 8, 18, 32, 18, 1], desc: 'Unreactive, endlessly malleable and lustrous: money and microelectronics.' },
+  { z: 80, sym: 'Hg', name: 'Mercury', mass: '200.59', cat: 'transition', group: 12, period: 6, cfg: '[Xe] 4f¹⁴ 5d¹⁰ 6s²', en: 2.0, phase: 'liquid', melt: 234.32, boil: 629.88, shells: [2, 8, 18, 32, 18, 2], desc: 'The only metal liquid at room temperature, and a potent neurotoxin.' },
+  { z: 81, sym: 'Tl', name: 'Thallium', mass: '204.38', cat: 'posttransition', group: 13, period: 6, cfg: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹', en: 1.62, phase: 'solid', melt: 577, boil: 1746, shells: [2, 8, 18, 32, 18, 3], desc: 'Soft, highly toxic metal once sold as tasteless rat poison.' },
+  { z: 82, sym: 'Pb', name: 'Lead', mass: '207.2', cat: 'posttransition', group: 14, period: 6, cfg: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²', en: 2.33, phase: 'solid', melt: 600.61, boil: 2022, shells: [2, 8, 18, 32, 18, 4], desc: 'Dense, soft metal that blocks radiation but poisons developing nervous systems.' },
+  { z: 83, sym: 'Bi', name: 'Bismuth', mass: '208.98', cat: 'posttransition', group: 15, period: 6, cfg: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³', en: 2.02, phase: 'solid', melt: 544.7, boil: 1837, shells: [2, 8, 18, 32, 18, 5], desc: 'Heaviest practically stable element; grows iridescent stair-step crystals.' },
+  { z: 84, sym: 'Po', name: 'Polonium', mass: '[209]', cat: 'posttransition', group: 16, period: 6, cfg: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴', en: 2.0, phase: 'solid', melt: 527, boil: 1235, shells: [2, 8, 18, 32, 18, 6], desc: 'Intensely radioactive metal discovered by Marie Curie and named for Poland.' },
+  { z: 85, sym: 'At', name: 'Astatine', mass: '[210]', cat: 'halogen', group: 17, period: 6, cfg: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵', en: 2.2, phase: 'solid', melt: 575, boil: 610, shells: [2, 8, 18, 32, 18, 7], desc: 'The rarest naturally occurring element: less than a gram exists on Earth.' },
+  { z: 86, sym: 'Rn', name: 'Radon', mass: '[222]', cat: 'noble', group: 18, period: 6, cfg: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶', en: 2.2, phase: 'gas', melt: 202, boil: 211.5, shells: [2, 8, 18, 32, 18, 8], desc: 'Radioactive gas seeping from bedrock; a leading cause of lung cancer.' },
+  { z: 87, sym: 'Fr', name: 'Francium', mass: '[223]', cat: 'alkali', group: 1, period: 7, cfg: '[Rn] 7s¹', en: 0.7, phase: 'solid', melt: 300, boil: 950, shells: [2, 8, 18, 32, 18, 8, 1], desc: 'The most unstable natural element; only a few atoms exist at any moment.' },
+  { z: 88, sym: 'Ra', name: 'Radium', mass: '[226]', cat: 'alkaline', group: 2, period: 7, cfg: '[Rn] 7s²', en: 0.9, phase: 'solid', melt: 973, boil: 2010, shells: [2, 8, 18, 32, 18, 8, 2], desc: 'Faintly glowing radioactive metal behind early luminous paint and its tragedies.' },
+  { z: 89, sym: 'Ac', name: 'Actinium', mass: '[227]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 6d¹ 7s²', en: 1.1, phase: 'solid', melt: 1323, boil: 3471, shells: [2, 8, 18, 32, 18, 9, 2], desc: 'Fiercely radioactive metal now used for targeted alpha cancer therapy.' },
+  { z: 90, sym: 'Th', name: 'Thorium', mass: '232.04', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 6d² 7s²', en: 1.3, phase: 'solid', melt: 2115, boil: 5061, shells: [2, 8, 18, 32, 18, 10, 2], desc: 'Weakly radioactive metal proposed as a more abundant, safer nuclear fuel.' },
+  { z: 91, sym: 'Pa', name: 'Protactinium', mass: '231.04', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f² 6d¹ 7s²', en: 1.5, phase: 'solid', melt: 1841, boil: 4300, shells: [2, 8, 18, 32, 20, 9, 2], desc: 'Rare, dense actinide that remains a scarce and hazardous laboratory curiosity.' },
+  { z: 92, sym: 'U', name: 'Uranium', mass: '238.03', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f³ 6d¹ 7s²', en: 1.38, phase: 'solid', melt: 1405.3, boil: 4404, shells: [2, 8, 18, 32, 21, 9, 2], desc: 'Heaviest primordial element; fuel for reactors and for the first weapons.' },
+  { z: 93, sym: 'Np', name: 'Neptunium', mass: '[237]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f⁴ 6d¹ 7s²', en: 1.36, phase: 'solid', melt: 917, boil: 4273, shells: [2, 8, 18, 32, 22, 9, 2], desc: 'The first transuranic element, produced when uranium captures a neutron.' },
+  { z: 94, sym: 'Pu', name: 'Plutonium', mass: '[244]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f⁶ 7s²', en: 1.28, phase: 'solid', melt: 912.5, boil: 3501, shells: [2, 8, 18, 32, 24, 8, 2], desc: 'Reactor-made metal that powers nuclear weapons and deep-space probes alike.' },
+  { z: 95, sym: 'Am', name: 'Americium', mass: '[243]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f⁷ 7s²', en: 1.13, phase: 'solid', melt: 1449, boil: 2880, shells: [2, 8, 18, 32, 25, 8, 2], desc: 'Alpha emitter quietly at work inside household smoke detectors.' },
+  { z: 96, sym: 'Cm', name: 'Curium', mass: '[247]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f⁷ 6d¹ 7s²', en: 1.28, phase: 'solid', melt: 1613, boil: 3383, shells: [2, 8, 18, 32, 25, 9, 2], desc: 'So radioactive it glows; used to power instruments on Mars rovers.' },
+  { z: 97, sym: 'Bk', name: 'Berkelium', mass: '[247]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f⁹ 7s²', en: 1.3, phase: 'solid', melt: 1259, boil: 2900, shells: [2, 8, 18, 32, 27, 8, 2], desc: 'Synthetic actinide named for Berkeley and made only in microgram batches.' },
+  { z: 98, sym: 'Cf', name: 'Californium', mass: '[251]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f¹⁰ 7s²', en: 1.3, phase: 'solid', melt: 1173, boil: 1743, shells: [2, 8, 18, 32, 28, 8, 2], desc: 'Powerful neutron source used to start reactors and scan cargo for explosives.' },
+  { z: 99, sym: 'Es', name: 'Einsteinium', mass: '[252]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f¹¹ 7s²', en: 1.3, phase: 'solid', melt: 1133, boil: 1269, shells: [2, 8, 18, 32, 29, 8, 2], desc: 'Found in the debris of a hydrogen bomb test and studied atom by atom.' },
+  { z: 100, sym: 'Fm', name: 'Fermium', mass: '[257]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f¹² 7s²', en: 1.3, phase: 'unknown', melt: 1800, boil: null, shells: [2, 8, 18, 32, 30, 8, 2], desc: 'The heaviest element reachable by neutron bombardment; never seen in bulk.' },
+  { z: 101, sym: 'Md', name: 'Mendelevium', mass: '[258]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f¹³ 7s²', en: 1.3, phase: 'unknown', melt: 1100, boil: null, shells: [2, 8, 18, 32, 31, 8, 2], desc: 'The first element ever identified one atom at a time.' },
+  { z: 102, sym: 'No', name: 'Nobelium', mass: '[259]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f¹⁴ 7s²', en: 1.3, phase: 'unknown', melt: 1100, boil: null, shells: [2, 8, 18, 32, 32, 8, 2], desc: 'Synthetic actinide that is unusually stable in the +2 oxidation state.' },
+  { z: 103, sym: 'Lr', name: 'Lawrencium', mass: '[266]', cat: 'actinide', group: null, period: 7, cfg: '[Rn] 5f¹⁴ 7s² 7p¹', en: 1.3, phase: 'unknown', melt: 1900, boil: null, shells: [2, 8, 18, 32, 32, 8, 3], desc: 'The final actinide; a handful of atoms made in heavy-ion accelerators.' },
+  { z: 104, sym: 'Rf', name: 'Rutherfordium', mass: '[267]', cat: 'transition', group: 4, period: 7, cfg: '[Rn] 5f¹⁴ 6d² 7s²', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 10, 2], desc: 'The first transactinide; chemistry experiments show it behaves like hafnium.' },
+  { z: 105, sym: 'Db', name: 'Dubnium', mass: '[268]', cat: 'transition', group: 5, period: 7, cfg: '[Rn] 5f¹⁴ 6d³ 7s²', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 11, 2], desc: 'Superheavy metal built by fusing lighter nuclei; it decays within hours at best.' },
+  { z: 106, sym: 'Sg', name: 'Seaborgium', mass: '[269]', cat: 'transition', group: 6, period: 7, cfg: '[Rn] 5f¹⁴ 6d⁴ 7s²', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 12, 2], desc: 'Superheavy element shown, atom by atom, to behave much like tungsten.' },
+  { z: 107, sym: 'Bh', name: 'Bohrium', mass: '[270]', cat: 'transition', group: 7, period: 7, cfg: '[Rn] 5f¹⁴ 6d⁵ 7s²', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 13, 2], desc: 'Superheavy metal whose measured chemistry resembles that of rhenium.' },
+  { z: 108, sym: 'Hs', name: 'Hassium', mass: '[269]', cat: 'transition', group: 8, period: 7, cfg: '[Rn] 5f¹⁴ 6d⁶ 7s²', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 14, 2], desc: 'Forms a volatile oxide, confirming that it really does sit below osmium.' },
+  { z: 109, sym: 'Mt', name: 'Meitnerium', mass: '[278]', cat: 'transition', group: 9, period: 7, cfg: '[Rn] 5f¹⁴ 6d⁷ 7s²', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 15, 2], desc: 'Too short-lived for its chemistry to have been measured at all.' },
+  { z: 110, sym: 'Ds', name: 'Darmstadtium', mass: '[281]', cat: 'transition', group: 10, period: 7, cfg: '[Rn] 5f¹⁴ 6d⁸ 7s²', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 16, 2], desc: 'Made a single atom at a time; every known isotope decays within seconds.' },
+  { z: 111, sym: 'Rg', name: 'Roentgenium', mass: '[282]', cat: 'transition', group: 11, period: 7, cfg: '[Rn] 5f¹⁴ 6d⁹ 7s²', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 17, 2], desc: 'Predicted to be a noble metal like gold, but it decays far too fast to test.' },
+  { z: 112, sym: 'Cn', name: 'Copernicium', mass: '[285]', cat: 'transition', group: 12, period: 7, cfg: '[Rn] 5f¹⁴ 6d¹⁰ 7s²', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 18, 2], desc: 'Relativistic effects may make this metal a volatile liquid or even a gas.' },
+  { z: 113, sym: 'Nh', name: 'Nihonium', mass: '[286]', cat: 'posttransition', group: 13, period: 7, cfg: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p¹', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 18, 3], desc: 'The first element discovered in Japan, named after Nihon.' },
+  { z: 114, sym: 'Fl', name: 'Flerovium', mass: '[289]', cat: 'posttransition', group: 14, period: 7, cfg: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p²', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 18, 4], desc: 'Sits under lead, yet early experiments hint it behaves almost like a noble gas.' },
+  { z: 115, sym: 'Mc', name: 'Moscovium', mass: '[290]', cat: 'posttransition', group: 15, period: 7, cfg: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p³', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 18, 5], desc: 'Made by firing calcium ions at americium; its atoms last milliseconds.' },
+  { z: 116, sym: 'Lv', name: 'Livermorium', mass: '[293]', cat: 'posttransition', group: 16, period: 7, cfg: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁴', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 18, 6], desc: 'Superheavy member of the oxygen group, observed only as single atoms.' },
+  { z: 117, sym: 'Ts', name: 'Tennessine', mass: '[294]', cat: 'halogen', group: 17, period: 7, cfg: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁵', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 18, 7], desc: 'Second-heaviest element known; nominally a halogen, but probably metallic.' },
+  { z: 118, sym: 'Og', name: 'Oganesson', mass: '[294]', cat: 'noble', group: 18, period: 7, cfg: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶', en: null, phase: 'unknown', melt: null, boil: null, shells: [2, 8, 18, 32, 32, 18, 8], desc: 'The heaviest element ever made: a noble gas that is predicted to be solid.' },
+];
+
+interface CategoryMeta {
+  id: Category;
+  label: string;
+  /** Short label for narrow legend chips */
+  short: string;
+}
+
+const CATEGORIES: CategoryMeta[] = [
+  { id: 'alkali', label: 'Alkali metal', short: 'Alkali' },
+  { id: 'alkaline', label: 'Alkaline earth metal', short: 'Alk. earth' },
+  { id: 'transition', label: 'Transition metal', short: 'Transition' },
+  { id: 'posttransition', label: 'Post-transition metal', short: 'Post-trans.' },
+  { id: 'metalloid', label: 'Metalloid', short: 'Metalloid' },
+  { id: 'nonmetal', label: 'Reactive nonmetal', short: 'Nonmetal' },
+  { id: 'halogen', label: 'Halogen', short: 'Halogen' },
+  { id: 'noble', label: 'Noble gas', short: 'Noble gas' },
+  { id: 'lanthanide', label: 'Lanthanide', short: 'Lanthanide' },
+  { id: 'actinide', label: 'Actinide', short: 'Actinide' },
+];
+
+const CATEGORY_LABEL: Record<Category, string> = Object.fromEntries(
+  CATEGORIES.map((c) => [c.id, c.label]),
+) as Record<Category, string>;
+
+const PHASE_LABEL: Record<Phase, string> = {
+  solid: 'Solid',
+  liquid: 'Liquid',
+  gas: 'Gas',
+  unknown: 'Unknown',
+};
+
+/* ------------------------------------------------------------------
+   Grid geometry.
+   Column 1 is the period-number gutter, so an element in IUPAC group g
+   sits in grid column g + 1. Row 1 is the group-number header, so period
+   p sits in grid row p + 1. Row 9 is the gap, and the detached
+   lanthanide / actinide rows are rows 10 and 11.
+   ------------------------------------------------------------------ */
+const F_BLOCK_COL_OFFSET = 4; // La / Ac start under group 3
+
+function gridX(el: ChemicalElement): number {
+  if (el.cat === 'lanthanide') return el.z - 57 + F_BLOCK_COL_OFFSET;
+  if (el.cat === 'actinide') return el.z - 89 + F_BLOCK_COL_OFFSET;
+  return (el.group ?? 1) + 1;
+}
+
+function gridY(el: ChemicalElement): number {
+  if (el.cat === 'lanthanide') return 10;
+  if (el.cat === 'actinide') return 11;
+  return el.period + 1;
+}
+
+const placed = ELEMENTS.map((el) => ({ el, x: gridX(el), y: gridY(el) }));
+
+const GROUPS = Array.from({ length: 18 }, (_, i) => i + 1);
+const PERIODS = Array.from({ length: 7 }, (_, i) => i + 1);
+
+const fmtTemp = (k: number | null): string =>
+  k === null ? 'Unknown' : `${k} K · ${Math.round(k - 273.15)} °C`;
+
+const uid = `pt-${Math.random().toString(36).slice(2, 9)}`;
+const panelId = `${uid}-panel`;
+const titleId = `${uid}-panel-title`;
+const searchId = `${uid}-search`;
+const tempId = `${uid}-temp`;
+---
+
+<section
+  class="ptbl"
+  data-ptbl
+  data-view="category"
+  aria-labelledby={`${uid}-heading`}
+>
+  <h2 id={`${uid}-heading`} class="visually-hidden">Interactive periodic table</h2>
+
+  <!-- ── Controls ─────────────────────────────────────────────── -->
+  <div class="ptbl-toolbar">
+    <div class="ptbl-search">
+      <label class="visually-hidden" for={searchId}>
+        Search elements by name, symbol or atomic number
+      </label>
+      <svg
+        class="ptbl-search-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <circle cx="10.5" cy="10.5" r="6.5"></circle>
+        <path d="m20 20-4.8-4.8"></path>
+      </svg>
+      <input
+        id={searchId}
+        class="ptbl-search-input"
+        type="search"
+        inputmode="search"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Search name, symbol or number…"
+        data-ptbl-search
+      />
+      <button class="ptbl-clear" type="button" data-ptbl-clear hidden>
+        <span class="visually-hidden">Clear search</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false">
+          <path d="M6 6l12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="ptbl-views" role="group" aria-label="Colour the table by">
+      <button
+        class="ptbl-view-btn is-on"
+        type="button"
+        data-ptbl-view="category"
+        aria-pressed="true"
+      >Category</button>
+      <button
+        class="ptbl-view-btn"
+        type="button"
+        data-ptbl-view="temp"
+        aria-pressed="false"
+      >Temperature</button>
+    </div>
+  </div>
+
+  <!-- ── Temperature scrubber (only meaningful in the temp view) ── -->
+  <div class="ptbl-temp" data-ptbl-tempbar hidden>
+    <div class="ptbl-temp-head">
+      <label class="ptbl-temp-label" for={tempId}>Temperature</label>
+      <output class="ptbl-temp-out" for={tempId} data-ptbl-tempout>298 K · 25 °C</output>
+    </div>
+    <input
+      id={tempId}
+      class="ptbl-temp-range"
+      type="range"
+      min="1"
+      max="6000"
+      step="1"
+      value="298"
+      data-ptbl-temprange
+    />
+    <div class="ptbl-temp-foot">
+      <div class="ptbl-presets" role="group" aria-label="Temperature presets">
+        <button type="button" class="ptbl-preset" data-ptbl-preset="4">4 K</button>
+        <button type="button" class="ptbl-preset" data-ptbl-preset="77">77 K</button>
+        <button type="button" class="ptbl-preset" data-ptbl-preset="298">298 K</button>
+        <button type="button" class="ptbl-preset" data-ptbl-preset="1000">1000 K</button>
+        <button type="button" class="ptbl-preset" data-ptbl-preset="3000">3000 K</button>
+      </div>
+      <p class="ptbl-tally" data-ptbl-tally></p>
+    </div>
+  </div>
+
+  <!-- ── Legend / category filter ──────────────────────────────── -->
+  <div class="ptbl-legend" role="group" aria-label="Filter by element category">
+    {
+      CATEGORIES.map((c) => (
+        <button
+          class="ptbl-chip"
+          type="button"
+          data-ptbl-cat={c.id}
+          data-cat={c.id}
+          aria-pressed="false"
+        >
+          <span class="ptbl-chip-key" aria-hidden="true" />
+          <span class="ptbl-chip-full">{c.label}</span>
+          <span class="ptbl-chip-short" aria-hidden="true">{c.short}</span>
+        </button>
+      ))
+    }
+    <button class="ptbl-chip ptbl-chip-reset" type="button" data-ptbl-reset hidden>
+      Show all
+    </button>
+  </div>
+
+  <!-- ── The table ─────────────────────────────────────────────── -->
+  <div class="ptbl-scroller" data-ptbl-scroller>
+    <div
+      class="ptbl-grid"
+      data-ptbl-grid
+      role="group"
+      aria-label="Periodic table of the elements, 118 elements arranged by group and period"
+    >
+      {
+        GROUPS.map((g) => (
+          <div class="ptbl-axis ptbl-axis-col" style={`--x:${g + 1};--y:1`} aria-hidden="true">
+            {g}
+          </div>
+        ))
+      }
+      {
+        PERIODS.map((p) => (
+          <div class="ptbl-axis ptbl-axis-row" style={`--x:1;--y:${p + 1}`} aria-hidden="true">
+            {p}
+          </div>
+        ))
+      }
+
+      <div class="ptbl-marker" style="--x:4;--y:7" aria-hidden="true">57–71</div>
+      <div class="ptbl-marker" style="--x:4;--y:8" aria-hidden="true">89–103</div>
+
+      <div class="ptbl-fband" style="--x:2;--y:10" aria-hidden="true">Lanthanides</div>
+      <div class="ptbl-fband" style="--x:2;--y:11" aria-hidden="true">Actinides</div>
+
+      {
+        placed.map(({ el, x, y }, i) => (
+          <button
+            class="ptbl-cell"
+            type="button"
+            style={`--x:${x};--y:${y}`}
+            data-cat={el.cat}
+            data-z={el.z}
+            data-x={x}
+            data-y={y}
+            data-sym={el.sym}
+            data-name={el.name}
+            data-mass={el.mass}
+            data-catlabel={CATEGORY_LABEL[el.cat]}
+            data-group={el.group === null ? 'f-block' : String(el.group)}
+            data-period={el.period}
+            data-cfg={el.cfg}
+            data-en={el.en === null ? '' : String(el.en)}
+            data-phase={el.phase}
+            data-phaselabel={PHASE_LABEL[el.phase]}
+            data-melt={el.melt === null ? '' : String(el.melt)}
+            data-boil={el.boil === null ? '' : String(el.boil)}
+            data-melttext={fmtTemp(el.melt)}
+            data-boiltext={fmtTemp(el.boil)}
+            data-shells={el.shells.join(',')}
+            data-desc={el.desc}
+            data-search={`${el.name} ${el.sym} ${el.z}`.toLowerCase()}
+            tabindex={i === 0 ? 0 : -1}
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-label={`${el.name}, symbol ${el.sym}, atomic number ${el.z}, ${CATEGORY_LABEL[el.cat]}`}
+          >
+            <span class="ptbl-z" aria-hidden="true">{el.z}</span>
+            <span class="ptbl-sym" aria-hidden="true">{el.sym}</span>
+            <span class="ptbl-name" aria-hidden="true">{el.name}</span>
+            <span class="ptbl-mass" aria-hidden="true">{el.mass}</span>
+          </button>
+        ))
+      }
+    </div>
+  </div>
+
+  <p class="ptbl-hint" data-ptbl-hint aria-hidden="true">
+    Swipe the table sideways to see every group →
+  </p>
+
+  <p class="visually-hidden" role="status" aria-live="polite" data-ptbl-status></p>
+
+  <!-- ── Detail panel ──────────────────────────────────────────── -->
+  <div class="ptbl-scrim" data-ptbl-scrim hidden></div>
+
+  <aside
+    id={panelId}
+    class="ptbl-panel"
+    data-ptbl-panel
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby={titleId}
+    data-open="false"
+  >
+    <button class="ptbl-panel-close" type="button" data-ptbl-close>
+      <span class="visually-hidden">Close element details</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false">
+        <path d="M6 6l12 12M18 6 6 18"></path>
+      </svg>
+    </button>
+
+    <div class="ptbl-panel-scroll">
+      <div class="ptbl-panel-head">
+        <div class="ptbl-tile" data-ptbl-tile data-cat="nonmetal" aria-hidden="true">
+          <span class="ptbl-tile-z" data-f="tileZ">1</span>
+          <span class="ptbl-tile-sym" data-f="tileSym">H</span>
+          <span class="ptbl-tile-mass" data-f="tileMass">1.008</span>
+        </div>
+        <div class="ptbl-panel-titles">
+          <h3 class="ptbl-panel-title" id={titleId} data-f="name" tabindex="-1">Hydrogen</h3>
+          <p class="ptbl-panel-cat" data-f="catlabel">Reactive nonmetal</p>
+          <p class="ptbl-panel-desc" data-f="desc"></p>
+        </div>
+      </div>
+
+      <dl class="ptbl-props">
+        <div class="ptbl-prop"><dt>Atomic number</dt><dd data-f="z">—</dd></div>
+        <div class="ptbl-prop"><dt>Atomic mass</dt><dd data-f="mass">—</dd></div>
+        <div class="ptbl-prop"><dt>Group</dt><dd data-f="group">—</dd></div>
+        <div class="ptbl-prop"><dt>Period</dt><dd data-f="period">—</dd></div>
+        <div class="ptbl-prop ptbl-prop-wide"><dt>Electron configuration</dt><dd data-f="cfg">—</dd></div>
+        <div class="ptbl-prop"><dt>Electronegativity</dt><dd data-f="en">—</dd></div>
+        <div class="ptbl-prop"><dt>Phase at STP</dt><dd data-f="phase">—</dd></div>
+        <div class="ptbl-prop"><dt>Melting point</dt><dd data-f="melt">—</dd></div>
+        <div class="ptbl-prop"><dt>Boiling point</dt><dd data-f="boil">—</dd></div>
+      </dl>
+
+      <div class="ptbl-shell">
+        <h4 class="ptbl-shell-title">Electron shells</h4>
+        <div class="ptbl-shell-art" data-ptbl-shellart></div>
+        <p class="ptbl-shell-counts" data-f="shellcounts">—</p>
+      </div>
+    </div>
+  </aside>
+</section>
+
+<style>
+  /* ============================================================
+     Category palette. Every swatch pairs a tinted surface with a
+     same-hue ink at ≥ 7:1 contrast, in both themes.
+     ============================================================ */
+  .ptbl {
+    --cat-alkali-bg: hsl(4 86% 93%);
+    --cat-alkali-fg: hsl(4 66% 28%);
+    --cat-alkali-key: hsl(4 76% 52%);
+
+    --cat-alkaline-bg: hsl(28 92% 91%);
+    --cat-alkaline-fg: hsl(24 76% 25%);
+    --cat-alkaline-key: hsl(28 84% 47%);
+
+    --cat-transition-bg: hsl(228 100% 93%);
+    --cat-transition-fg: hsl(233 74% 33%);
+    --cat-transition-key: hsl(232 92% 58%);
+
+    --cat-posttransition-bg: hsl(188 70% 89%);
+    --cat-posttransition-fg: hsl(193 78% 21%);
+    --cat-posttransition-key: hsl(190 72% 36%);
+
+    --cat-metalloid-bg: hsl(96 58% 88%);
+    --cat-metalloid-fg: hsl(99 64% 20%);
+    --cat-metalloid-key: hsl(97 52% 35%);
+
+    --cat-nonmetal-bg: hsl(152 62% 89%);
+    --cat-nonmetal-fg: hsl(155 66% 20%);
+    --cat-nonmetal-key: hsl(154 60% 34%);
+
+    --cat-halogen-bg: hsl(46 94% 87%);
+    --cat-halogen-fg: hsl(38 82% 23%);
+    --cat-halogen-key: hsl(42 88% 43%);
+
+    --cat-noble-bg: hsl(328 92% 93%);
+    --cat-noble-fg: hsl(332 66% 30%);
+    --cat-noble-key: hsl(330 74% 52%);
+
+    --cat-lanthanide-bg: hsl(258 92% 94%);
+    --cat-lanthanide-fg: hsl(262 62% 35%);
+    --cat-lanthanide-key: hsl(260 72% 58%);
+
+    --cat-actinide-bg: hsl(290 78% 93%);
+    --cat-actinide-fg: hsl(292 60% 31%);
+    --cat-actinide-key: hsl(292 62% 48%);
+
+    /* Phase palette for the temperature view */
+    --ph-solid-bg: hsl(215 32% 90%);
+    --ph-solid-fg: hsl(216 44% 25%);
+    --ph-solid-key: hsl(215 30% 48%);
+
+    --ph-liquid-bg: hsl(200 88% 88%);
+    --ph-liquid-fg: hsl(205 82% 22%);
+    --ph-liquid-key: hsl(202 80% 42%);
+
+    --ph-gas-bg: hsl(30 96% 89%);
+    --ph-gas-fg: hsl(20 82% 27%);
+    --ph-gas-key: hsl(26 88% 48%);
+
+    --ph-unknown-bg: var(--bg-sunken);
+    --ph-unknown-fg: var(--text-faint);
+    --ph-unknown-key: var(--border-strong);
+
+    --cell: clamp(48px, 4.9vw, 66px);
+    --axis: calc(var(--cell) * 0.62);
+    --gap: 3px;
+
+    position: relative;
+    display: block;
+  }
+
+  :global(:root[data-theme='dark']) .ptbl {
+    --cat-alkali-bg: hsl(4 44% 21%);
+    --cat-alkali-fg: hsl(6 92% 86%);
+    --cat-alkali-key: hsl(4 82% 66%);
+
+    --cat-alkaline-bg: hsl(26 46% 20%);
+    --cat-alkaline-fg: hsl(30 94% 84%);
+    --cat-alkaline-key: hsl(28 86% 62%);
+
+    --cat-transition-bg: hsl(232 44% 26%);
+    --cat-transition-fg: hsl(230 100% 88%);
+    --cat-transition-key: hsl(232 100% 74%);
+
+    --cat-posttransition-bg: hsl(191 46% 19%);
+    --cat-posttransition-fg: hsl(188 88% 82%);
+    --cat-posttransition-key: hsl(190 76% 58%);
+
+    --cat-metalloid-bg: hsl(98 38% 18%);
+    --cat-metalloid-fg: hsl(94 74% 82%);
+    --cat-metalloid-key: hsl(97 56% 56%);
+
+    --cat-nonmetal-bg: hsl(154 42% 17%);
+    --cat-nonmetal-fg: hsl(150 76% 82%);
+    --cat-nonmetal-key: hsl(153 60% 52%);
+
+    --cat-halogen-bg: hsl(41 48% 19%);
+    --cat-halogen-fg: hsl(46 94% 80%);
+    --cat-halogen-key: hsl(44 88% 60%);
+
+    --cat-noble-bg: hsl(330 42% 22%);
+    --cat-noble-fg: hsl(330 94% 88%);
+    --cat-noble-key: hsl(330 84% 70%);
+
+    --cat-lanthanide-bg: hsl(260 42% 26%);
+    --cat-lanthanide-fg: hsl(262 96% 89%);
+    --cat-lanthanide-key: hsl(260 88% 74%);
+
+    --cat-actinide-bg: hsl(292 38% 24%);
+    --cat-actinide-fg: hsl(295 90% 89%);
+    --cat-actinide-key: hsl(293 74% 70%);
+
+    --ph-solid-bg: hsl(216 26% 22%);
+    --ph-solid-fg: hsl(212 48% 86%);
+    --ph-solid-key: hsl(214 32% 62%);
+
+    --ph-liquid-bg: hsl(202 56% 20%);
+    --ph-liquid-fg: hsl(198 90% 82%);
+    --ph-liquid-key: hsl(200 80% 60%);
+
+    --ph-gas-bg: hsl(24 54% 21%);
+    --ph-gas-fg: hsl(30 94% 82%);
+    --ph-gas-key: hsl(27 86% 62%);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .ptbl {
+      --cat-alkali-bg: hsl(4 44% 21%);
+      --cat-alkali-fg: hsl(6 92% 86%);
+      --cat-alkali-key: hsl(4 82% 66%);
+
+      --cat-alkaline-bg: hsl(26 46% 20%);
+      --cat-alkaline-fg: hsl(30 94% 84%);
+      --cat-alkaline-key: hsl(28 86% 62%);
+
+      --cat-transition-bg: hsl(232 44% 26%);
+      --cat-transition-fg: hsl(230 100% 88%);
+      --cat-transition-key: hsl(232 100% 74%);
+
+      --cat-posttransition-bg: hsl(191 46% 19%);
+      --cat-posttransition-fg: hsl(188 88% 82%);
+      --cat-posttransition-key: hsl(190 76% 58%);
+
+      --cat-metalloid-bg: hsl(98 38% 18%);
+      --cat-metalloid-fg: hsl(94 74% 82%);
+      --cat-metalloid-key: hsl(97 56% 56%);
+
+      --cat-nonmetal-bg: hsl(154 42% 17%);
+      --cat-nonmetal-fg: hsl(150 76% 82%);
+      --cat-nonmetal-key: hsl(153 60% 52%);
+
+      --cat-halogen-bg: hsl(41 48% 19%);
+      --cat-halogen-fg: hsl(46 94% 80%);
+      --cat-halogen-key: hsl(44 88% 60%);
+
+      --cat-noble-bg: hsl(330 42% 22%);
+      --cat-noble-fg: hsl(330 94% 88%);
+      --cat-noble-key: hsl(330 84% 70%);
+
+      --cat-lanthanide-bg: hsl(260 42% 26%);
+      --cat-lanthanide-fg: hsl(262 96% 89%);
+      --cat-lanthanide-key: hsl(260 88% 74%);
+
+      --cat-actinide-bg: hsl(292 38% 24%);
+      --cat-actinide-fg: hsl(295 90% 89%);
+      --cat-actinide-key: hsl(293 74% 70%);
+
+      --ph-solid-bg: hsl(216 26% 22%);
+      --ph-solid-fg: hsl(212 48% 86%);
+      --ph-solid-key: hsl(214 32% 62%);
+
+      --ph-liquid-bg: hsl(202 56% 20%);
+      --ph-liquid-fg: hsl(198 90% 82%);
+      --ph-liquid-key: hsl(200 80% 60%);
+
+      --ph-gas-bg: hsl(24 54% 21%);
+      --ph-gas-fg: hsl(30 94% 82%);
+      --ph-gas-key: hsl(27 86% 62%);
+    }
+  }
+
+  /* Resolve the active swatch once, then everything reads --sw-* */
+  .ptbl [data-cat='alkali'] { --sw-bg: var(--cat-alkali-bg); --sw-fg: var(--cat-alkali-fg); --sw-key: var(--cat-alkali-key); }
+  .ptbl [data-cat='alkaline'] { --sw-bg: var(--cat-alkaline-bg); --sw-fg: var(--cat-alkaline-fg); --sw-key: var(--cat-alkaline-key); }
+  .ptbl [data-cat='transition'] { --sw-bg: var(--cat-transition-bg); --sw-fg: var(--cat-transition-fg); --sw-key: var(--cat-transition-key); }
+  .ptbl [data-cat='posttransition'] { --sw-bg: var(--cat-posttransition-bg); --sw-fg: var(--cat-posttransition-fg); --sw-key: var(--cat-posttransition-key); }
+  .ptbl [data-cat='metalloid'] { --sw-bg: var(--cat-metalloid-bg); --sw-fg: var(--cat-metalloid-fg); --sw-key: var(--cat-metalloid-key); }
+  .ptbl [data-cat='nonmetal'] { --sw-bg: var(--cat-nonmetal-bg); --sw-fg: var(--cat-nonmetal-fg); --sw-key: var(--cat-nonmetal-key); }
+  .ptbl [data-cat='halogen'] { --sw-bg: var(--cat-halogen-bg); --sw-fg: var(--cat-halogen-fg); --sw-key: var(--cat-halogen-key); }
+  .ptbl [data-cat='noble'] { --sw-bg: var(--cat-noble-bg); --sw-fg: var(--cat-noble-fg); --sw-key: var(--cat-noble-key); }
+  .ptbl [data-cat='lanthanide'] { --sw-bg: var(--cat-lanthanide-bg); --sw-fg: var(--cat-lanthanide-fg); --sw-key: var(--cat-lanthanide-key); }
+  .ptbl [data-cat='actinide'] { --sw-bg: var(--cat-actinide-bg); --sw-fg: var(--cat-actinide-fg); --sw-key: var(--cat-actinide-key); }
+
+  /* Temperature view overrides the swatch with the computed phase */
+  .ptbl[data-view='temp'] .ptbl-cell[data-ph='solid'] { --sw-bg: var(--ph-solid-bg); --sw-fg: var(--ph-solid-fg); --sw-key: var(--ph-solid-key); }
+  .ptbl[data-view='temp'] .ptbl-cell[data-ph='liquid'] { --sw-bg: var(--ph-liquid-bg); --sw-fg: var(--ph-liquid-fg); --sw-key: var(--ph-liquid-key); }
+  .ptbl[data-view='temp'] .ptbl-cell[data-ph='gas'] { --sw-bg: var(--ph-gas-bg); --sw-fg: var(--ph-gas-fg); --sw-key: var(--ph-gas-key); }
+  .ptbl[data-view='temp'] .ptbl-cell[data-ph='unknown'] { --sw-bg: var(--ph-unknown-bg); --sw-fg: var(--ph-unknown-fg); --sw-key: var(--ph-unknown-key); }
+
+  /* ============================================================
+     Toolbar
+     ============================================================ */
+  .ptbl-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+  }
+
+  .ptbl-search {
+    position: relative;
+    flex: 1 1 15rem;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .ptbl-search-icon {
+    position: absolute;
+    left: 0.85rem;
+    width: 18px;
+    height: 18px;
+    color: var(--text-faint);
+    pointer-events: none;
+  }
+
+  .ptbl-search-input {
+    width: 100%;
+    padding: 0.7em 2.4rem 0.7em 2.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r-full);
+    background: var(--surface);
+    font-size: var(--fs-sm);
+    font-weight: 400;
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+
+  .ptbl-search-input::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .ptbl-search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-subtle);
+  }
+
+  .ptbl-search-input::placeholder {
+    color: var(--text-faint);
+  }
+
+  .ptbl-clear {
+    position: absolute;
+    right: 0.5rem;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--r-full);
+    color: var(--text-muted);
+    transition: background-color var(--dur-fast) var(--ease);
+  }
+
+  .ptbl-clear:hover {
+    background: var(--bg-sunken);
+    color: var(--text);
+  }
+
+  .ptbl-clear svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .ptbl-views {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-full);
+    background: var(--bg-subtle);
+  }
+
+  .ptbl-view-btn {
+    padding: 0.45em 1em;
+    border-radius: var(--r-full);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: background-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
+  }
+
+  .ptbl-view-btn:hover {
+    color: var(--text);
+  }
+
+  .ptbl-view-btn.is-on {
+    background: var(--accent);
+    color: var(--text-on-accent);
+  }
+
+  /* ============================================================
+     Temperature scrubber
+     ============================================================ */
+  .ptbl-temp {
+    margin-bottom: var(--sp-4);
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--bg-subtle);
+  }
+
+  .ptbl-temp[hidden] {
+    display: none;
+  }
+
+  .ptbl-temp-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-1);
+  }
+
+  .ptbl-temp-label {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .ptbl-temp-out {
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ptbl-temp-range {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .ptbl-temp-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-top: var(--sp-2);
+  }
+
+  .ptbl-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1);
+  }
+
+  .ptbl-preset {
+    padding: 0.25em 0.7em;
+    border: 1px solid var(--border);
+    border-radius: var(--r-full);
+    background: var(--surface);
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    transition: border-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
+  }
+
+  .ptbl-preset:hover {
+    border-color: var(--accent-border);
+    color: var(--accent);
+  }
+
+  .ptbl-tally {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ============================================================
+     Legend / filter chips
+     ============================================================ */
+  .ptbl-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-4);
+  }
+
+  .ptbl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    padding: 0.3em 0.8em;
+    border: 1px solid var(--border);
+    border-radius: var(--r-full);
+    background: var(--surface);
+    font-size: var(--fs-xs);
+    font-weight: 400;
+    color: var(--text-muted);
+    transition: border-color var(--dur-fast) var(--ease),
+      background-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+
+  .ptbl-chip:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+  }
+
+  .ptbl-chip[aria-pressed='true'] {
+    background: var(--sw-bg);
+    color: var(--sw-fg);
+    border-color: var(--sw-key);
+    font-weight: 500;
+  }
+
+  .ptbl-chip-key {
+    width: 0.66em;
+    height: 0.66em;
+    border-radius: var(--r-xs);
+    background: var(--sw-key);
+    flex-shrink: 0;
+  }
+
+  .ptbl-chip-short {
+    display: none;
+  }
+
+  .ptbl-chip-reset {
+    color: var(--accent);
+    border-color: var(--accent-border);
+    background: var(--accent-subtle);
+  }
+
+  .ptbl-chip-reset[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 560px) {
+    .ptbl-chip-full {
+      display: none;
+    }
+    .ptbl-chip-short {
+      display: inline;
+    }
+  }
+
+  /* ============================================================
+     Grid
+     ============================================================ */
+  .ptbl-scroller {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: var(--sp-2);
+    scrollbar-width: thin;
+    overscroll-behavior-x: contain;
+  }
+
+  .ptbl-grid {
+    display: grid;
+    grid-template-columns: var(--axis) repeat(18, var(--cell));
+    grid-template-rows:
+      calc(var(--cell) * 0.42)
+      repeat(7, var(--cell))
+      var(--sp-4)
+      repeat(2, var(--cell));
+    gap: var(--gap);
+    width: max-content;
+    margin-inline: auto;
+    padding: 2px;
+  }
+
+  .ptbl-axis {
+    grid-column: var(--x);
+    grid-row: var(--y);
+    display: grid;
+    place-items: center;
+    font-size: calc(var(--cell) * 0.19);
+    font-weight: 500;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .ptbl-axis.is-axis {
+    color: var(--accent);
+  }
+
+  .ptbl-marker,
+  .ptbl-fband {
+    grid-column: var(--x);
+    grid-row: var(--y);
+    display: grid;
+    place-items: center;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--r-xs);
+    background: var(--bg-subtle);
+    font-size: calc(var(--cell) * 0.17);
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ptbl-fband {
+    grid-column: var(--x) / span 2;
+    border: none;
+    background: none;
+    justify-items: end;
+    padding-right: 0.4em;
+    text-align: right;
+    font-size: calc(var(--cell) * 0.16);
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+  }
+
+  .ptbl-cell {
+    grid-column: var(--x);
+    grid-row: var(--y);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: calc(var(--cell) * 0.04);
+    border: 1px solid transparent;
+    border-radius: var(--r-xs);
+    background: var(--sw-bg);
+    color: var(--sw-fg);
+    overflow: hidden;
+    text-align: center;
+    line-height: 1.05;
+    transition: transform var(--dur-fast) var(--ease),
+      box-shadow var(--dur-fast) var(--ease), opacity var(--dur) var(--ease),
+      filter var(--dur) var(--ease), background-color var(--dur) var(--ease),
+      color var(--dur) var(--ease), border-color var(--dur-fast) var(--ease);
+  }
+
+  .ptbl-z {
+    position: absolute;
+    top: calc(var(--cell) * 0.045);
+    left: calc(var(--cell) * 0.08);
+    font-size: calc(var(--cell) * 0.19);
+    font-weight: 500;
+    opacity: 0.72;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ptbl-sym {
+    font-size: calc(var(--cell) * 0.35);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-top: calc(var(--cell) * 0.1);
+  }
+
+  .ptbl-name {
+    max-width: 100%;
+    margin-top: calc(var(--cell) * 0.03);
+    font-size: calc(var(--cell) * 0.145);
+    font-weight: 400;
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ptbl-mass {
+    font-size: calc(var(--cell) * 0.135);
+    opacity: 0.62;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 640px) {
+    .ptbl-mass {
+      display: none;
+    }
+  }
+
+  /* — states — */
+  .ptbl-cell:hover,
+  .ptbl-cell:focus-visible {
+    transform: translateY(-3px) scale(1.04);
+    box-shadow: var(--shadow-md);
+    border-color: var(--sw-key);
+    z-index: 3;
+  }
+
+  .ptbl-cell:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .ptbl-cell.is-axis {
+    box-shadow: inset 0 0 0 1px var(--sw-key);
+    z-index: 1;
+  }
+
+  .ptbl-cell.is-dim {
+    opacity: 0.16;
+    filter: grayscale(0.9);
+  }
+
+  .ptbl-cell.is-dim:hover {
+    opacity: 0.45;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .ptbl-cell.is-selected {
+    z-index: 4;
+    border-color: var(--text);
+    box-shadow: 0 0 0 2px var(--text), var(--shadow-md);
+  }
+
+  /* ============================================================
+     Scroll hint
+     ============================================================ */
+  .ptbl-hint {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-xs);
+    color: var(--text-faint);
+    text-align: center;
+    transition: opacity var(--dur) var(--ease);
+  }
+
+  .ptbl-hint.is-gone {
+    opacity: 0;
+  }
+
+  @media (min-width: 960px) {
+    .ptbl-hint {
+      display: none;
+    }
+  }
+
+  /* ============================================================
+     Detail panel — side panel on desktop, bottom sheet on mobile
+     ============================================================ */
+  .ptbl-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: hsl(240 20% 6% / 0.5);
+    opacity: 0;
+    transition: opacity var(--dur) var(--ease);
+  }
+
+  .ptbl-scrim.is-on {
+    opacity: 1;
+  }
+
+  .ptbl-scrim[hidden] {
+    display: none;
+  }
+
+  @media (min-width: 900px) {
+    .ptbl-scrim {
+      display: none;
+    }
+  }
+
+  .ptbl-panel {
+    position: fixed;
+    z-index: 50;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease),
+      visibility var(--dur) var(--ease);
+  }
+
+  .ptbl-panel[data-open='false'] {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* bottom sheet */
+  @media (max-width: 899px) {
+    .ptbl-panel {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-height: min(80vh, 640px);
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      border-bottom: none;
+    }
+
+    .ptbl-panel[data-open='false'] {
+      transform: translateY(100%);
+    }
+  }
+
+  /* side panel */
+  @media (min-width: 900px) {
+    .ptbl-panel {
+      top: calc(var(--header-h) + var(--sp-4));
+      right: var(--sp-4);
+      width: min(26rem, 34vw);
+      max-height: calc(100vh - var(--header-h) - var(--sp-6));
+      border-radius: var(--r-lg);
+    }
+
+    .ptbl-panel[data-open='false'] {
+      transform: translateX(calc(100% + var(--sp-5)));
+    }
+  }
+
+  .ptbl-panel-scroll {
+    max-height: inherit;
+    overflow-y: auto;
+    padding: var(--sp-5) var(--sp-5) var(--sp-6);
+    overscroll-behavior: contain;
+  }
+
+  @media (max-width: 899px) {
+    .ptbl-panel-scroll {
+      max-height: min(80vh, 640px);
+      padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  .ptbl-panel-close {
+    position: absolute;
+    top: var(--sp-3);
+    right: var(--sp-3);
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-full);
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    transition: background-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
+  }
+
+  .ptbl-panel-close:hover {
+    background: var(--bg-sunken);
+    color: var(--text);
+  }
+
+  .ptbl-panel-close svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .ptbl-panel-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-4);
+    padding-right: var(--sp-6);
+  }
+
+  .ptbl-tile {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 5.5rem;
+    height: 5.5rem;
+    border-radius: var(--r-md);
+    background: var(--sw-bg);
+    color: var(--sw-fg);
+    box-shadow: inset 0 0 0 1px var(--sw-key);
+    line-height: 1.1;
+    transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .ptbl-tile-z {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    opacity: 0.75;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ptbl-tile-sym {
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .ptbl-tile-mass {
+    font-size: var(--fs-xs);
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ptbl-panel-titles {
+    min-width: 0;
+  }
+
+  .ptbl-panel-title {
+    font-size: var(--fs-xl);
+    font-weight: 700;
+    letter-spacing: var(--ls-tight);
+  }
+
+  .ptbl-panel-title:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 4px;
+  }
+
+  .ptbl-panel-cat {
+    margin-top: 0.15em;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--sw-key);
+  }
+
+  .ptbl-panel-desc {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+    color: var(--text-muted);
+  }
+
+  .ptbl-props {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-2) var(--sp-3);
+    margin-top: var(--sp-5);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .ptbl-prop-wide {
+    grid-column: 1 / -1;
+  }
+
+  .ptbl-prop dt {
+    font-size: var(--fs-xs);
+    color: var(--text-faint);
+    letter-spacing: 0.01em;
+  }
+
+  .ptbl-prop dd {
+    margin: 0;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.35;
+  }
+
+  .ptbl-shell {
+    margin-top: var(--sp-5);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .ptbl-shell-title {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .ptbl-shell-art {
+    display: grid;
+    place-items: center;
+    margin-top: var(--sp-2);
+  }
+
+  .ptbl-shell-art :global(svg) {
+    width: min(210px, 100%);
+    height: auto;
+  }
+
+  .ptbl-shell-art :global(.sd-ring) {
+    fill: none;
+    stroke: var(--border-strong);
+    stroke-width: 1;
+  }
+
+  .ptbl-shell-art :global(.sd-nucleus) {
+    fill: var(--sw-key);
+  }
+
+  .ptbl-shell-art :global(.sd-nucleus-text) {
+    fill: var(--bg);
+    font-size: 11px;
+    font-weight: 700;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  .ptbl-shell-art :global(.sd-e) {
+    fill: var(--sw-key);
+  }
+
+  .ptbl-shell-counts {
+    margin-top: var(--sp-2);
+    text-align: center;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ============================================================
+     Motion preferences
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce) {
+    .ptbl-cell,
+    .ptbl-chip,
+    .ptbl-panel,
+    .ptbl-scrim,
+    .ptbl-hint {
+      transition: none;
+    }
+
+    .ptbl-cell:hover,
+    .ptbl-cell:focus-visible {
+      transform: none;
+    }
+
+    .ptbl-chip:hover {
+      transform: none;
+    }
+
+    .ptbl-panel[data-open='false'] {
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  type Phase = 'solid' | 'liquid' | 'gas' | 'unknown';
+
+  interface Cell {
+    el: HTMLButtonElement;
+    z: number;
+    x: number;
+    y: number;
+    cat: string;
+    search: string;
+    melt: number | null;
+    boil: number | null;
+  }
+
+  const toNum = (v: string | undefined): number | null => {
+    if (!v) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  /**
+   * Phase of an element at temperature `t` (K). Elements whose boiling point
+   * sits below their melting point (arsenic, and carbon at 1 atm) sublime, so
+   * the boiling point is treated as a solid → gas transition.
+   */
+  function phaseAt(melt: number | null, boil: number | null, t: number): Phase {
+    if (melt === null && boil === null) return 'unknown';
+    if (melt !== null && boil !== null && boil <= melt) {
+      return t < boil ? 'solid' : 'gas';
+    }
+    if (melt !== null && t < melt) return 'solid';
+    if (boil !== null && t >= boil) return 'gas';
+    if (melt === null) return 'unknown';
+    return 'liquid';
+  }
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  /** Bohr-style shell diagram built from the shell occupancy numbers. */
+  function shellDiagram(shells: number[], z: number, name: string): SVGSVGElement {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 200 200');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute(
+      'aria-label',
+      `Electron shell diagram for ${name}: ${shells.join(', ')} electrons from the innermost shell outwards.`,
+    );
+
+    const cx = 100;
+    const cy = 100;
+    const n = shells.length;
+    const inner = 30;
+    const outer = 92;
+    const step = n > 1 ? (outer - inner) / (n - 1) : 0;
+
+    shells.forEach((count, i) => {
+      const r = n > 1 ? inner + i * step : 52;
+
+      const ring = document.createElementNS(SVG_NS, 'circle');
+      ring.setAttribute('class', 'sd-ring');
+      ring.setAttribute('cx', String(cx));
+      ring.setAttribute('cy', String(cy));
+      ring.setAttribute('r', r.toFixed(2));
+      svg.appendChild(ring);
+
+      const dot = count <= 8 ? 3.4 : count <= 18 ? 2.6 : 1.9;
+      const offset = i * 0.28;
+
+      for (let k = 0; k < count; k += 1) {
+        const theta = -Math.PI / 2 + (2 * Math.PI * k) / count + offset;
+        const e = document.createElementNS(SVG_NS, 'circle');
+        e.setAttribute('class', 'sd-e');
+        e.setAttribute('cx', (cx + r * Math.cos(theta)).toFixed(2));
+        e.setAttribute('cy', (cy + r * Math.sin(theta)).toFixed(2));
+        e.setAttribute('r', String(dot));
+        svg.appendChild(e);
+      }
+    });
+
+    const nucleus = document.createElementNS(SVG_NS, 'circle');
+    nucleus.setAttribute('class', 'sd-nucleus');
+    nucleus.setAttribute('cx', String(cx));
+    nucleus.setAttribute('cy', String(cy));
+    nucleus.setAttribute('r', '14');
+    svg.appendChild(nucleus);
+
+    const label = document.createElementNS(SVG_NS, 'text');
+    label.setAttribute('class', 'sd-nucleus-text');
+    label.setAttribute('x', String(cx));
+    label.setAttribute('y', String(cy));
+    label.textContent = String(z);
+    svg.appendChild(label);
+
+    return svg;
+  }
+
+  function initTable(root: HTMLElement): void {
+    const grid = root.querySelector<HTMLElement>('[data-ptbl-grid]');
+    const panel = root.querySelector<HTMLElement>('[data-ptbl-panel]');
+    if (!grid || !panel) return;
+
+    const searchInput = root.querySelector<HTMLInputElement>('[data-ptbl-search]');
+    const clearBtn = root.querySelector<HTMLButtonElement>('[data-ptbl-clear]');
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-ptbl-cat]'));
+    const resetBtn = root.querySelector<HTMLButtonElement>('[data-ptbl-reset]');
+    const viewBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-ptbl-view]'));
+    const tempBar = root.querySelector<HTMLElement>('[data-ptbl-tempbar]');
+    const tempRange = root.querySelector<HTMLInputElement>('[data-ptbl-temprange]');
+    const tempOut = root.querySelector<HTMLElement>('[data-ptbl-tempout]');
+    const tally = root.querySelector<HTMLElement>('[data-ptbl-tally]');
+    const presets = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-ptbl-preset]'));
+    const status = root.querySelector<HTMLElement>('[data-ptbl-status]');
+    const scroller = root.querySelector<HTMLElement>('[data-ptbl-scroller]');
+    const hint = root.querySelector<HTMLElement>('[data-ptbl-hint]');
+    const scrim = root.querySelector<HTMLElement>('[data-ptbl-scrim]');
+    const closeBtn = root.querySelector<HTMLButtonElement>('[data-ptbl-close]');
+    const tile = panel.querySelector<HTMLElement>('[data-ptbl-tile]');
+    const shellArt = panel.querySelector<HTMLElement>('[data-ptbl-shellart]');
+    const panelTitle = panel.querySelector<HTMLElement>('.ptbl-panel-title');
+
+    const fields = new Map<string, HTMLElement>();
+    panel.querySelectorAll<HTMLElement>('[data-f]').forEach((el) => {
+      const key = el.dataset.f;
+      if (key) fields.set(key, el);
+    });
+    const setField = (key: string, value: string): void => {
+      const el = fields.get(key);
+      if (el) el.textContent = value;
+    };
+
+    const axisCells = Array.from(root.querySelectorAll<HTMLElement>('.ptbl-axis'));
+    const cells: Cell[] = Array.from(
+      grid.querySelectorAll<HTMLButtonElement>('.ptbl-cell'),
+    ).map((el) => ({
+      el,
+      z: Number(el.dataset.z),
+      x: Number(el.dataset.x),
+      y: Number(el.dataset.y),
+      cat: el.dataset.cat ?? '',
+      search: el.dataset.search ?? '',
+      melt: toNum(el.dataset.melt),
+      boil: toNum(el.dataset.boil),
+    }));
+
+    const byPos = new Map<string, number>();
+    cells.forEach((c, i) => byPos.set(`${c.x}:${c.y}`, i));
+
+    let activeIndex = 0;
+    let selected: Cell | null = null;
+    let query = '';
+    let activeCat: string | null = null;
+    let view: 'category' | 'temp' = 'category';
+    let temperature = 298;
+
+    /* ---------- roving tabindex ---------- */
+    function setActive(index: number, moveFocus: boolean): void {
+      if (index < 0 || index >= cells.length) return;
+      cells[activeIndex].el.tabIndex = -1;
+      activeIndex = index;
+      const cell = cells[activeIndex];
+      cell.el.tabIndex = 0;
+      if (moveFocus) cell.el.focus();
+    }
+
+    /* ---------- group / period cross-hair ---------- */
+    let axisOn: HTMLElement[] = [];
+
+    function clearAxis(): void {
+      axisOn.forEach((el) => el.classList.remove('is-axis'));
+      axisOn = [];
+    }
+
+    function markAxis(cell: Cell): void {
+      clearAxis();
+      cells.forEach((c) => {
+        if (c === cell) return;
+        if (c.x === cell.x || c.y === cell.y) {
+          c.el.classList.add('is-axis');
+          axisOn.push(c.el);
+        }
+      });
+      axisCells.forEach((a) => {
+        const ax = Number(a.style.getPropertyValue('--x'));
+        const ay = Number(a.style.getPropertyValue('--y'));
+        if (ax === cell.x || ay === cell.y) {
+          a.classList.add('is-axis');
+          axisOn.push(a);
+        }
+      });
+    }
+
+    /* ---------- filtering ---------- */
+    function matches(c: Cell): boolean {
+      if (activeCat && c.cat !== activeCat) return false;
+      if (!query) return true;
+      if (/^\d+$/.test(query)) return String(c.z).startsWith(query);
+      return c.search.includes(query);
+    }
+
+    function applyFilter(): void {
+      let hits = 0;
+      cells.forEach((c) => {
+        const ok = matches(c);
+        c.el.classList.toggle('is-dim', !ok);
+        if (ok) hits += 1;
+      });
+
+      if (resetBtn) resetBtn.hidden = !activeCat && !query;
+      if (clearBtn) clearBtn.hidden = query.length === 0;
+
+      if (status) {
+        if (!query && !activeCat) {
+          status.textContent = 'Showing all 118 elements.';
+        } else {
+          const bits: string[] = [];
+          if (query) bits.push(`matching “${query}”`);
+          if (activeCat) {
+            const chip = chips.find((b) => b.dataset.ptblCat === activeCat);
+            const label = chip?.querySelector('.ptbl-chip-full')?.textContent?.trim();
+            if (label) bits.push(`in ${label}`);
+          }
+          status.textContent = `${hits} element${hits === 1 ? '' : 's'} ${bits.join(' ')}.`;
+        }
+      }
+    }
+
+    /* ---------- temperature view ---------- */
+    function applyTemperature(): void {
+      const counts: Record<Phase, number> = { solid: 0, liquid: 0, gas: 0, unknown: 0 };
+      cells.forEach((c) => {
+        const p = phaseAt(c.melt, c.boil, temperature);
+        c.el.dataset.ph = p;
+        counts[p] += 1;
+      });
+      if (tempOut) {
+        tempOut.textContent = `${temperature} K · ${Math.round(temperature - 273.15)} °C`;
+      }
+      if (tally) {
+        tally.textContent = `${counts.solid} solid · ${counts.liquid} liquid · ${counts.gas} gas · ${counts.unknown} unknown`;
+      }
+    }
+
+    function setView(next: 'category' | 'temp'): void {
+      view = next;
+      root.dataset.view = next;
+      viewBtns.forEach((b) => {
+        const on = b.dataset.ptblView === next;
+        b.classList.toggle('is-on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      if (tempBar) tempBar.hidden = next !== 'temp';
+      if (next === 'temp') applyTemperature();
+      if (status) {
+        status.textContent =
+          next === 'temp'
+            ? `Temperature view on. Cells are coloured by phase at ${temperature} kelvin.`
+            : 'Category view on. Cells are coloured by element category.';
+      }
+    }
+
+    /* ---------- detail panel ---------- */
+    let lastTrigger: HTMLElement | null = null;
+
+    function openPanel(cell: Cell): void {
+      const d = cell.el.dataset;
+      if (selected) {
+        selected.el.classList.remove('is-selected');
+        selected.el.setAttribute('aria-expanded', 'false');
+      }
+      selected = cell;
+      cell.el.classList.add('is-selected');
+      cell.el.setAttribute('aria-expanded', 'true');
+      lastTrigger = cell.el;
+
+      if (tile) tile.dataset.cat = d.cat ?? '';
+      panel.dataset.cat = d.cat ?? '';
+
+      setField('tileZ', d.z ?? '');
+      setField('tileSym', d.sym ?? '');
+      setField('tileMass', d.mass ?? '');
+      setField('name', d.name ?? '');
+      setField('catlabel', d.catlabel ?? '');
+      setField('desc', d.desc ?? '');
+      setField('z', d.z ?? '');
+      setField('mass', d.mass ?? '');
+      setField('group', d.group === 'f-block' ? 'f-block' : (d.group ?? ''));
+      setField('period', d.period ?? '');
+      setField('cfg', d.cfg ?? '');
+      setField('en', d.en ? d.en : 'No value defined');
+      setField('phase', d.phaselabel ?? '');
+      setField('melt', d.melttext ?? '');
+      setField('boil', d.boiltext ?? '');
+
+      const shells = (d.shells ?? '')
+        .split(',')
+        .map((s) => Number(s))
+        .filter((s) => Number.isFinite(s) && s > 0);
+
+      if (shellArt) {
+        shellArt.replaceChildren(
+          shellDiagram(shells, Number(d.z), d.name ?? 'this element'),
+        );
+      }
+      setField('shellcounts', shells.length ? shells.join(' · ') : '—');
+
+      panel.dataset.open = 'true';
+      panel.removeAttribute('inert');
+      if (scrim) {
+        scrim.hidden = false;
+        // next frame so the opacity transition actually runs
+        requestAnimationFrame(() => scrim.classList.add('is-on'));
+      }
+      if (panelTitle) panelTitle.focus();
+    }
+
+    function closePanel(returnFocus = true): void {
+      if (panel.dataset.open !== 'true') return;
+      panel.dataset.open = 'false';
+      panel.setAttribute('inert', '');
+      if (scrim) {
+        scrim.classList.remove('is-on');
+        window.setTimeout(() => {
+          if (panel.dataset.open !== 'true') scrim.hidden = true;
+        }, 240);
+      }
+      if (selected) {
+        selected.el.classList.remove('is-selected');
+        selected.el.setAttribute('aria-expanded', 'false');
+      }
+      selected = null;
+      if (returnFocus && lastTrigger) lastTrigger.focus();
+      lastTrigger = null;
+    }
+
+    panel.setAttribute('inert', '');
+
+    /* ---------- events ---------- */
+    cells.forEach((cell, i) => {
+      cell.el.addEventListener('click', () => {
+        setActive(i, false);
+        openPanel(cell);
+      });
+      cell.el.addEventListener('mouseenter', () => markAxis(cell));
+      cell.el.addEventListener('focus', () => {
+        setActive(i, false);
+        markAxis(cell);
+      });
+      cell.el.addEventListener('blur', clearAxis);
+    });
+
+    grid.addEventListener('mouseleave', clearAxis);
+
+    grid.addEventListener('keydown', (event: KeyboardEvent) => {
+      const key = event.key;
+
+      if (key === 'Escape') {
+        closePanel();
+        return;
+      }
+
+      const deltas: Record<string, [number, number]> = {
+        ArrowRight: [1, 0],
+        ArrowLeft: [-1, 0],
+        ArrowDown: [0, 1],
+        ArrowUp: [0, -1],
+      };
+
+      if (key in deltas) {
+        event.preventDefault();
+        const [dx, dy] = deltas[key];
+        const from = cells[activeIndex];
+        let x = from.x;
+        let y = from.y;
+        for (let step = 0; step < 24; step += 1) {
+          x += dx;
+          y += dy;
+          if (x < 1 || x > 19 || y < 1 || y > 11) return;
+          const hit = byPos.get(`${x}:${y}`);
+          if (hit !== undefined) {
+            setActive(hit, true);
+            return;
+          }
+        }
+        return;
+      }
+
+      if (key === 'Home' || key === 'End') {
+        event.preventDefault();
+        const row = cells
+          .map((c, i) => ({ c, i }))
+          .filter(({ c }) => c.y === cells[activeIndex].y)
+          .sort((a, b) => a.c.x - b.c.x);
+        if (!row.length) return;
+        const target = key === 'Home' ? row[0] : row[row.length - 1];
+        setActive(target.i, true);
+      }
+    });
+
+    searchInput?.addEventListener('input', () => {
+      query = searchInput.value.trim().toLowerCase();
+      applyFilter();
+    });
+
+    searchInput?.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && searchInput.value) {
+        event.stopPropagation();
+        searchInput.value = '';
+        query = '';
+        applyFilter();
+      }
+    });
+
+    clearBtn?.addEventListener('click', () => {
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+      }
+      query = '';
+      applyFilter();
+    });
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const cat = chip.dataset.ptblCat ?? null;
+        activeCat = activeCat === cat ? null : cat;
+        chips.forEach((c) => {
+          c.setAttribute(
+            'aria-pressed',
+            c.dataset.ptblCat === activeCat ? 'true' : 'false',
+          );
+        });
+        applyFilter();
+      });
+    });
+
+    resetBtn?.addEventListener('click', () => {
+      activeCat = null;
+      query = '';
+      if (searchInput) searchInput.value = '';
+      chips.forEach((c) => c.setAttribute('aria-pressed', 'false'));
+      applyFilter();
+    });
+
+    viewBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const next = btn.dataset.ptblView === 'temp' ? 'temp' : 'category';
+        if (next !== view) setView(next);
+      });
+    });
+
+    tempRange?.addEventListener('input', () => {
+      temperature = Number(tempRange.value);
+      applyTemperature();
+    });
+
+    presets.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const value = Number(btn.dataset.ptblPreset);
+        if (!Number.isFinite(value)) return;
+        temperature = value;
+        if (tempRange) tempRange.value = String(value);
+        applyTemperature();
+      });
+    });
+
+    closeBtn?.addEventListener('click', () => closePanel());
+    scrim?.addEventListener('click', () => closePanel());
+
+    panel.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closePanel();
+    });
+
+    scroller?.addEventListener(
+      'scroll',
+      () => {
+        if (hint && scroller.scrollLeft > 24) hint.classList.add('is-gone');
+      },
+      { passive: true },
+    );
+
+    if (hint && scroller && scroller.scrollWidth <= scroller.clientWidth) {
+      hint.classList.add('is-gone');
+    }
+
+    applyFilter();
+    applyTemperature();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-ptbl]').forEach(initTable);
+</script>

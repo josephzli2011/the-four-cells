@@ -1,0 +1,381 @@
+---
+import Icon from './Icon.astro';
+import { courses, issues } from '../data/site';
+
+type Entry = {
+  title: string;
+  href: string;
+  kind: string;
+  context: string;
+  keywords: string;
+};
+
+const index: Entry[] = [
+  ...courses.map((c) => ({
+    title: c.title,
+    href: `/courses/${c.slug}`,
+    kind: 'Course',
+    context: c.group,
+    keywords: `${c.title} ${c.group} ${c.blurb}`,
+  })),
+  ...courses.flatMap((c) =>
+    c.lessons.map((l) => ({
+      title: l.title,
+      href: `/courses/${c.slug}/${l.slug}`,
+      kind: l.kind,
+      context: c.title,
+      keywords: `${l.title} ${c.title} ${l.blurb}`,
+    }))
+  ),
+  ...issues.map((i) => ({
+    title: i.title,
+    href: `/issues/${i.slug}`,
+    kind: i.kind,
+    context: i.authors.join(', '),
+    keywords: `${i.title} ${i.subtitle ?? ''} ${i.authors.join(' ')}`,
+  })),
+  {
+    title: 'Issues',
+    href: '/issues',
+    kind: 'Page',
+    context: 'Published work',
+    keywords: 'issues papers magazines pamphlets archive',
+  },
+  {
+    title: 'CSAD™ Virtual Tutoring',
+    href: '/csad',
+    kind: 'Page',
+    context: 'Free one-on-one help',
+    keywords: 'csad tutoring tutor help sessions',
+  },
+  {
+    title: 'Our Team',
+    href: '/about',
+    kind: 'Page',
+    context: 'About thefourcells',
+    keywords: 'about team who contact contributors',
+  },
+  {
+    title: 'Submit an Article',
+    href: '/submit',
+    kind: 'Page',
+    context: 'Publish with us',
+    keywords: 'submit write publish article contribute',
+  },
+];
+---
+
+<div class="sr" data-search hidden>
+  <div class="sr-backdrop" data-search-close></div>
+
+  <div class="sr-panel" role="dialog" aria-modal="true" aria-label="Search the site">
+    <div class="sr-input-row">
+      <Icon name="search" size={19} class="sr-mag" />
+      <input
+        type="search"
+        placeholder="Search courses, lessons, and issues…"
+        aria-label="Search"
+        autocomplete="off"
+        spellcheck="false"
+        data-search-input
+      />
+      <button class="sr-esc" data-search-close aria-label="Close search">esc</button>
+    </div>
+
+    <ul class="sr-results" role="listbox" aria-label="Results" data-search-results>
+      {
+        index.map((e, i) => (
+          <li
+            role="option"
+            aria-selected={i === 0 ? 'true' : 'false'}
+            data-entry
+            data-keywords={e.keywords.toLowerCase()}
+            data-href={e.href}
+          >
+            <a href={e.href} tabindex="-1">
+              <span class="sr-kind">{e.kind}</span>
+              <span class="sr-text">
+                <span class="sr-title">{e.title}</span>
+                <span class="sr-context">{e.context}</span>
+              </span>
+              <Icon name="arrow" size={15} class="sr-go" />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="sr-empty" data-search-empty hidden>No matches.</p>
+
+    <div class="sr-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span><kbd>esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sr {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: grid;
+    align-items: start;
+    justify-items: center;
+    padding: clamp(1rem, 8vh, 6rem) var(--sp-4) var(--sp-4);
+  }
+
+  .sr[hidden] { display: none; }
+
+  .sr-backdrop {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, #0a0a12 55%, transparent);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity var(--dur) var(--ease);
+  }
+
+  .sr.is-open .sr-backdrop { opacity: 1; }
+
+  .sr-panel {
+    position: relative;
+    width: min(100%, 620px);
+    max-height: min(70vh, 560px);
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-10px) scale(0.985);
+    transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+
+  .sr.is-open .sr-panel { opacity: 1; transform: none; }
+
+  .sr-input-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-4) var(--sp-5);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sr-mag { color: var(--text-faint); flex-shrink: 0; }
+
+  .sr-input-row input {
+    flex: 1;
+    border: none;
+    background: none;
+    font-size: var(--fs-lg);
+    color: var(--text);
+    padding: 0;
+  }
+
+  .sr-input-row input:focus { outline: none; }
+  .sr-input-row input::-webkit-search-cancel-button { display: none; }
+
+  .sr-esc {
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-xs);
+    font-size: var(--fs-xs);
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  .sr-esc:hover { color: var(--text); border-color: var(--border-strong); }
+
+  .sr-results {
+    list-style: none;
+    margin: 0;
+    padding: var(--sp-2);
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .sr-results li[hidden] { display: none; }
+
+  .sr-results a {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+    border-radius: var(--r-sm);
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .sr-results li[aria-selected='true'] a { background: var(--accent-subtle); }
+
+  .sr-kind {
+    flex-shrink: 0;
+    min-width: 76px;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  .sr-text { min-width: 0; }
+
+  .sr-title {
+    display: block;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sr-context {
+    display: block;
+    font-size: var(--fs-xs);
+    color: var(--text-faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sr-go { margin-left: auto; color: var(--accent); opacity: 0; flex-shrink: 0; }
+  .sr-results li[aria-selected='true'] .sr-go { opacity: 1; }
+
+  .sr-empty { padding: var(--sp-7); text-align: center; color: var(--text-muted); }
+
+  .sr-foot {
+    display: flex;
+    gap: var(--sp-4);
+    padding: var(--sp-3) var(--sp-5);
+    border-top: 1px solid var(--border);
+    background: var(--bg-subtle);
+    font-size: var(--fs-xs);
+    color: var(--text-faint);
+  }
+
+  kbd {
+    display: inline-block;
+    min-width: 17px;
+    padding: 1px 4px;
+    margin-right: 3px;
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 10px;
+    text-align: center;
+  }
+
+  @media (max-width: 560px) {
+    .sr-foot { display: none; }
+    .sr-kind { min-width: 60px; }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-search]');
+  const input = document.querySelector<HTMLInputElement>('[data-search-input]');
+  const list = document.querySelector<HTMLElement>('[data-search-results]');
+  const empty = document.querySelector<HTMLElement>('[data-search-empty]');
+  const entries = Array.from(document.querySelectorAll<HTMLLIElement>('[data-entry]'));
+
+  let lastFocused: HTMLElement | null = null;
+
+  const visible = () => entries.filter((e) => !e.hidden);
+
+  const select = (target: HTMLLIElement | undefined) => {
+    if (!target) return;
+    entries.forEach((e) => e.setAttribute('aria-selected', String(e === target)));
+    target.scrollIntoView({ block: 'nearest' });
+  };
+
+  const open = () => {
+    if (!root) return;
+    lastFocused = document.activeElement as HTMLElement;
+    root.hidden = false;
+    requestAnimationFrame(() => root.classList.add('is-open'));
+    document.body.style.overflow = 'hidden';
+    input?.focus();
+    input?.select();
+  };
+
+  const close = () => {
+    if (!root) return;
+    root.classList.remove('is-open');
+    document.body.style.overflow = '';
+    window.setTimeout(() => {
+      root.hidden = true;
+    }, 200);
+    lastFocused?.focus();
+  };
+
+  const filter = (q: string) => {
+    const needle = q.trim().toLowerCase();
+    const terms = needle.split(/\s+/).filter(Boolean);
+
+    entries.forEach((e) => {
+      const hay = e.dataset.keywords ?? '';
+      e.hidden = terms.length > 0 && !terms.every((t) => hay.includes(t));
+    });
+
+    const shown = visible();
+    if (empty) empty.hidden = shown.length > 0;
+    if (list) list.hidden = shown.length === 0;
+    entries.forEach((e) => e.setAttribute('aria-selected', 'false'));
+    select(shown[0]);
+  };
+
+  document.querySelectorAll('[data-search-open]').forEach((btn) =>
+    btn.addEventListener('click', open)
+  );
+
+  document.querySelectorAll('[data-search-close]').forEach((btn) =>
+    btn.addEventListener('click', close)
+  );
+
+  input?.addEventListener('input', () => filter(input.value));
+
+  document.addEventListener('keydown', (e) => {
+    const isOpen = root && !root.hidden;
+    const target = e.target as HTMLElement;
+    const typing =
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable;
+
+    // Open with "/" or Cmd/Ctrl+K
+    if (!isOpen && !typing && (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k'))) {
+      e.preventDefault();
+      open();
+      return;
+    }
+
+    if (!isOpen) return;
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+      return;
+    }
+
+    const shown = visible();
+    if (!shown.length) return;
+    const current = shown.findIndex((x) => x.getAttribute('aria-selected') === 'true');
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      select(shown[(current + 1) % shown.length]);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      select(shown[(current - 1 + shown.length) % shown.length]);
+    } else if (e.key === 'Enter') {
+      const href = shown[current === -1 ? 0 : current]?.dataset.href;
+      if (href) {
+        e.preventDefault();
+        window.location.href = href;
+      }
+    }
+  });
+</script>

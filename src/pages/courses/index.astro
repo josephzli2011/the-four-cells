@@ -37,7 +37,7 @@ const totalLessons = courses.reduce((n, c) => n + c.lessons.length, 0);
               </h2>
               <ul role="list" class="grid">
                 {list.map((c, i) => (
-                  <li data-reveal style={`--reveal-delay:${i * 50}ms`}>
+                  <li data-reveal style={`--reveal-delay:${Math.min(i * 50, 150)}ms`}>
                     <a href={`/courses/${c.slug}`} class="subject">
                       <span class="subject-icon">
                         <Icon name={c.icon} size={22} />
@@ -147,7 +147,7 @@ const totalLessons = courses.reduce((n, c) => n + c.lessons.length, 0);
     transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
   }
 
-  .subject:hover .subject-icon { background: var(--accent); color: var(--white); }
+  .subject:hover .subject-icon { background: var(--accent); color: var(--text-on-accent); }
 
   .subject-name { font-size: var(--fs-lg); font-weight: 500; }
 

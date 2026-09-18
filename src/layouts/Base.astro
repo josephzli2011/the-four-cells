@@ -46,6 +46,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? brand.url).href;
     {/* Set theme before first paint to avoid a flash of the wrong palette. */}
     <script is:inline>
       (() => {
+        // Marks JS as available. Scroll-reveal only hides content behind this
+        // class, so without JS the page renders fully rather than blank.
+        document.documentElement.classList.add('js');
         try {
           const saved = localStorage.getItem('tfc-theme');
           if (saved === 'light' || saved === 'dark') {

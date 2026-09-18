@@ -39,7 +39,7 @@ const values = [
       <ul role="list" class="values">
         {
           values.map((v, i) => (
-            <li class="value" data-reveal style={`--reveal-delay:${i * 70}ms`}>
+            <li class="value" data-reveal style={`--reveal-delay:${Math.min(i * 70, 150)}ms`}>
               <span class="value-icon">
                 <Icon name={v.icon} size={22} />
               </span>
@@ -71,7 +71,7 @@ const values = [
       <ul role="list" class="people">
         {
           contributors.map((name, i) => (
-            <li class="person" data-reveal style={`--reveal-delay:${i * 60}ms`}>
+            <li class="person" data-reveal style={`--reveal-delay:${Math.min(i * 60, 150)}ms`}>
               <span class="avatar" aria-hidden="true">
                 {name
                   .split(' ')
@@ -209,7 +209,7 @@ const values = [
     flex-shrink: 0;
     border-radius: var(--r-full);
     background: var(--accent);
-    color: var(--white);
+    color: var(--text-on-accent);
     font-size: var(--fs-sm);
     font-weight: 700;
   }
@@ -244,35 +244,35 @@ const values = [
     gap: var(--sp-5);
     padding: var(--sp-7);
     border-radius: var(--r-lg);
-    background: linear-gradient(140deg, var(--accent), var(--blue-700));
-    color: var(--white);
+    background: linear-gradient(140deg, var(--brand), var(--blue-700));
+    color: var(--text-on-brand);
   }
 
   .contact h2 { font-size: var(--fs-2xl); font-weight: 500; }
 
   .contact p {
     margin-top: var(--sp-2);
-    color: color-mix(in srgb, var(--white) 88%, transparent);
+    color: color-mix(in srgb, var(--text-on-brand) 88%, transparent);
     max-width: 46ch;
   }
 
   .contact-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
 
   .contact .btn {
-    --btn-bg: var(--white);
-    --btn-fg: var(--accent);
+    --btn-bg: var(--text-on-brand);
+    --btn-fg: var(--brand);
   }
 
   .contact .btn:hover { --btn-bg: var(--off-white); }
 
   .contact .btn-secondary {
     --btn-bg: transparent;
-    --btn-fg: var(--white);
-    border-color: color-mix(in srgb, var(--white) 45%, transparent);
+    --btn-fg: var(--text-on-brand);
+    border-color: color-mix(in srgb, var(--text-on-brand) 45%, transparent);
   }
 
   .contact .btn-secondary:hover {
-    --btn-bg: color-mix(in srgb, var(--white) 14%, transparent);
-    --btn-fg: var(--white);
+    --btn-bg: color-mix(in srgb, var(--text-on-brand) 14%, transparent);
+    --btn-fg: var(--text-on-brand);
   }
 </style>

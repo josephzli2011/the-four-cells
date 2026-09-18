@@ -822,7 +822,11 @@ const MARS_CY = SCALE_BOTTOM - MARS_R;
       display: none;
     }
     .mx-hotspot {
+      /* Label is hidden here, so the dot alone must still clear 24x24 */
       padding: 0.3em;
+      min-width: 24px;
+      min-height: 24px;
+      justify-content: center;
     }
   }
 
@@ -873,6 +877,12 @@ const MARS_CY = SCALE_BOTTOM - MARS_R;
     gap: var(--sp-6);
   }
 
+  /* Grid items default to min-width:auto, so wide panel content forces the
+     track open and overflows the viewport on narrow screens. */
+  .mx-compare > * {
+    min-width: 0;
+  }
+
   @media (min-width: 760px) {
     .mx-compare {
       grid-template-columns: minmax(220px, 320px) 1fr;
@@ -914,6 +924,7 @@ const MARS_CY = SCALE_BOTTOM - MARS_R;
 
   #mx-metric-slider {
     width: 100%;
+    height: 24px; /* WCAG 2.2 minimum target size */
     accent-color: var(--accent);
   }
 
@@ -926,7 +937,13 @@ const MARS_CY = SCALE_BOTTOM - MARS_R;
   }
 
   .mx-slider-ticks span {
-    flex: 1;
+    /* min-width:auto is the flex default and stops these shrinking, which
+       pushed the panel past the viewport on narrow screens. */
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     text-align: center;
   }
 
@@ -974,6 +991,15 @@ const MARS_CY = SCALE_BOTTOM - MARS_R;
   :global([data-theme='dark']) .mx-bar-tag--earth,
   :global([data-theme='dark']) .mx-bar-tag--mars {
     color: var(--text);
+  }
+
+  /* The dark planet fills drop to ~2:1 as label text, so the system-preference
+     path needs the same lift the explicit [data-theme] path already gets. */
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .mx-bar-tag--earth,
+    :global(:root:not([data-theme='light'])) .mx-bar-tag--mars {
+      color: var(--text);
+    }
   }
 
   .mx-bar-track {

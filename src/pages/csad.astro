@@ -62,7 +62,7 @@ const points = [
       <ul role="list" class="points">
         {
           points.map((p, i) => (
-            <li class="point" data-reveal style={`--reveal-delay:${i * 70}ms`}>
+            <li class="point" data-reveal style={`--reveal-delay:${Math.min(i * 70, 150)}ms`}>
               <span class="point-icon">
                 <Icon name={p.icon} size={22} />
               </span>
@@ -146,8 +146,8 @@ const points = [
     width: 90px;
     height: 90px;
     border-radius: var(--r-full);
-    background: linear-gradient(140deg, var(--accent), var(--blue-700));
-    color: var(--white);
+    background: linear-gradient(140deg, var(--brand), var(--blue-700));
+    color: var(--text-on-brand);
     box-shadow: var(--shadow-accent);
   }
 

@@ -42,7 +42,7 @@ const kinds = [...new Set(issues.map((i) => i.kind))];
       <div class="grid" data-issue-grid>
         {
           sorted.map((issue, i) => (
-            <div data-kind={issue.kind} data-reveal style={`--reveal-delay:${i * 70}ms`}>
+            <div data-kind={issue.kind} data-reveal style={`--reveal-delay:${Math.min(i * 70, 150)}ms`}>
               <ResourceCard
                 href={`/issues/${issue.slug}`}
                 title={issue.title}

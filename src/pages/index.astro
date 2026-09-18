@@ -138,7 +138,7 @@ const modules = [
       <ul role="list" class="subject-grid">
         {
           navCourses.map((c, i) => (
-            <li data-reveal style={`--reveal-delay:${Math.min(i * 45, 300)}ms`}>
+            <li data-reveal style={`--reveal-delay:${Math.min(i * 45, 150)}ms`}>
               <a href={`/courses/${c.slug}`} class="subject">
                 <span class="subject-icon">
                   <Icon name={c.icon} size={22} />
@@ -173,7 +173,7 @@ const modules = [
       <div class="modules">
         {
           modules.map((m, i) => (
-            <article class="module" data-reveal style={`--reveal-delay:${i * 70}ms`}>
+            <article class="module" data-reveal style={`--reveal-delay:${Math.min(i * 70, 150)}ms`}>
               <div class="module-art">
                 <CoverArt seed={m.href} ratio="16 / 11" />
               </div>
@@ -210,7 +210,7 @@ const modules = [
           </div>
           <div class="issue-grid">
             {rest.map((issue, i) => (
-              <div data-reveal style={`--reveal-delay:${i * 70}ms`}>
+              <div data-reveal style={`--reveal-delay:${Math.min(i * 70, 150)}ms`}>
                 <ResourceCard
                   href={`/issues/${issue.slug}`}
                   title={issue.title}
@@ -397,6 +397,7 @@ const modules = [
   .head-link {
     display: inline-flex;
     align-items: center;
+    padding-block: 3px;
     gap: var(--sp-2);
     font-size: var(--fs-sm);
     font-weight: 500;
@@ -448,7 +449,7 @@ const modules = [
     transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
   }
 
-  .subject:hover .subject-icon { background: var(--accent); color: var(--white); }
+  .subject:hover .subject-icon { background: var(--accent); color: var(--text-on-accent); }
 
   .subject-name { font-size: var(--fs-lg); font-weight: 500; }
 
@@ -581,11 +582,11 @@ const modules = [
   .band:hover :global(.btn-arrow) { transform: translateX(4px); }
 
   .band-accent {
-    background: linear-gradient(140deg, var(--accent), var(--blue-700));
+    background: linear-gradient(140deg, var(--brand), var(--blue-700));
     border-color: transparent;
-    color: var(--white);
+    color: var(--text-on-brand);
   }
 
-  .band-accent p { color: color-mix(in srgb, var(--white) 86%, transparent); }
-  .band-accent .band-cta { color: var(--white); }
+  .band-accent p { color: color-mix(in srgb, var(--text-on-brand) 86%, transparent); }
+  .band-accent .band-cta { color: var(--text-on-brand); }
 </style>

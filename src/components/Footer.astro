@@ -61,8 +61,8 @@ const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
 
 <style>
   .ftr {
-    background: var(--accent);
-    color: var(--white);
+    background: var(--brand);
+    color: var(--text-on-brand);
     margin-top: var(--sp-9);
     padding-block: var(--sp-8) var(--sp-5);
   }
@@ -85,7 +85,7 @@ const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
     display: inline-flex;
     align-items: center;
     gap: var(--sp-3);
-    color: var(--white);
+    color: var(--text-on-brand);
     text-decoration: none;
     font-size: var(--fs-xl);
     font-weight: 500;
@@ -101,7 +101,7 @@ const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
   }
 
   .logo-mark span {
-    background: var(--white);
+    background: var(--text-on-brand);
     border-radius: 3px;
     transition: transform var(--dur) var(--ease);
   }
@@ -115,7 +115,7 @@ const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
     max-width: 44ch;
     font-size: var(--fs-sm);
     line-height: 1.75;
-    color: color-mix(in srgb, var(--white) 88%, transparent);
+    color: color-mix(in srgb, var(--text-on-brand) 88%, transparent);
   }
 
   .ftr-heading {
@@ -123,14 +123,18 @@ const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
     font-weight: 500;
     letter-spacing: var(--ls-wide);
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--white) 65%, transparent);
+    /* 65% computes to 3.99:1 on brand blue — below AA for this size */
+    color: color-mix(in srgb, var(--text-on-brand) 80%, transparent);
     margin-bottom: var(--sp-4);
   }
 
-  .ftr-col ul { display: grid; gap: var(--sp-2); }
+  .ftr-col ul { display: grid; gap: var(--sp-1); }
 
   .ftr-col a {
-    color: color-mix(in srgb, var(--white) 92%, transparent);
+    display: inline-block;
+    /* Keeps the hit area at the 24px WCAG 2.2 minimum without visual change */
+    padding-block: 5px;
+    color: color-mix(in srgb, var(--text-on-brand) 92%, transparent);
     text-decoration: none;
     font-size: var(--fs-sm);
     transition: color var(--dur-fast) var(--ease),
@@ -138,7 +142,7 @@ const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
   }
 
   .ftr-col a:hover {
-    color: var(--white);
+    color: var(--text-on-brand);
     padding-left: 4px;
     text-decoration: underline;
   }
@@ -153,12 +157,12 @@ const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
     gap: var(--sp-4);
     margin-top: var(--sp-8);
     padding-top: var(--sp-5);
-    border-top: 1px solid color-mix(in srgb, var(--white) 22%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--text-on-brand) 22%, transparent);
   }
 
   .ftr-bottom small {
     font-size: var(--fs-xs);
-    color: color-mix(in srgb, var(--white) 72%, transparent);
+    color: color-mix(in srgb, var(--text-on-brand) 72%, transparent);
   }
 
   .ftr-cta {
@@ -166,9 +170,9 @@ const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
     align-items: center;
     gap: var(--sp-2);
     padding: 0.55em 1.2em;
-    border: 1px solid color-mix(in srgb, var(--white) 45%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text-on-brand) 45%, transparent);
     border-radius: var(--r-full);
-    color: var(--white);
+    color: var(--text-on-brand);
     text-decoration: none;
     font-size: var(--fs-sm);
     font-weight: 500;
@@ -176,5 +180,5 @@ const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
       color var(--dur) var(--ease);
   }
 
-  .ftr-cta:hover { background: var(--white); color: var(--accent); }
+  .ftr-cta:hover { background: var(--text-on-brand); color: var(--brand); }
 </style>

@@ -50,8 +50,13 @@
 
   --text: var(--ink);
   --text-muted: var(--grey-500);
-  --text-faint: var(--grey-400);
+  /* 4.6:1 on white — must stay AA, it carries metadata and labels, not decoration */
+  --text-faint: #6b6b7a;
   --text-on-accent: var(--off-white);
+  /* Brand blue that does NOT lift in dark mode, for surfaces that stay blue in
+     both themes (footer, gradient bands). Pair only with --text-on-brand. */
+  --brand: var(--blue-600);
+  --text-on-brand: var(--white);
 
   --accent: var(--blue-600);
   --accent-hover: var(--blue-700);
@@ -126,9 +131,14 @@
   --border-strong: #3a3a4a;
 
   --text: #ecedf2;
-  --text-muted: #a0a0b0;
-  --text-faint: #70707f;
+  --text-muted: #ababbc;
+  --text-faint: #8b8b9c;
   --text-on-accent: #0e0e12;
+
+  /* The footer and gradient bands stay brand-blue in both themes, so their
+     foreground must stay white — not the lifted accent's dark foreground. */
+  --brand: var(--blue-600);
+  --text-on-brand: var(--white);
 
   /* #2020FA is too dark to read on a dark field — lift it. */
   --accent: #8f8fff;
@@ -157,9 +167,12 @@
     --border-strong: #3a3a4a;
 
     --text: #ecedf2;
-    --text-muted: #a0a0b0;
-    --text-faint: #70707f;
+    --text-muted: #ababbc;
+    --text-faint: #8b8b9c;
     --text-on-accent: #0e0e12;
+
+    --brand: var(--blue-600);
+    --text-on-brand: var(--white);
 
     --accent: #8f8fff;
     --accent-hover: #a8a8ff;
@@ -272,7 +285,7 @@ ol[role='list'] {
 
 ::selection {
   background: var(--accent);
-  color: var(--white);
+  color: var(--text-on-accent);
 }
 
 /* ============================================================
@@ -334,7 +347,7 @@ ol[role='list'] {
   z-index: 200;
   padding: var(--sp-3) var(--sp-4);
   background: var(--accent);
-  color: var(--white);
+  color: var(--text-on-accent);
   border-radius: var(--r-sm);
   font-weight: 500;
   transform: translateY(-200%);
@@ -455,7 +468,10 @@ ol[role='list'] {
    Scroll reveal
    ============================================================ */
 
-[data-reveal] {
+/* Only hide content when JS is confirmed running to reveal it again. The `js`
+   class is set by an inline head script, so a JS failure, a blocked bundle, or
+   a reader that never executes scripts still gets the full page. */
+.js [data-reveal] {
   opacity: 0;
   transform: translateY(18px);
   transition: opacity var(--dur-slow) var(--ease),
@@ -463,9 +479,16 @@ ol[role='list'] {
   transition-delay: var(--reveal-delay, 0ms);
 }
 
-[data-reveal].is-visible {
+.js [data-reveal].is-visible {
   opacity: 1;
   transform: none;
+}
+
+@media print {
+  .js [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -482,7 +505,7 @@ ol[role='list'] {
     scroll-behavior: auto !important;
   }
 
-  [data-reveal] {
+  .js [data-reveal] {
     opacity: 1;
     transform: none;
   }

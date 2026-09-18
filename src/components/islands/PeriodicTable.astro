@@ -1522,9 +1522,13 @@ const tempId = `${uid}-temp`;
   }
 
   function initTable(root: HTMLElement): void {
-    const grid = root.querySelector<HTMLElement>('[data-ptbl-grid]');
-    const panel = root.querySelector<HTMLElement>('[data-ptbl-panel]');
-    if (!grid || !panel) return;
+    const gridEl = root.querySelector<HTMLElement>('[data-ptbl-grid]');
+    const panelEl = root.querySelector<HTMLElement>('[data-ptbl-panel]');
+    if (!gridEl || !panelEl) return;
+
+    // Re-bind as definitely-defined so the nested handlers below keep the type.
+    const grid: HTMLElement = gridEl;
+    const panel: HTMLElement = panelEl;
 
     const searchInput = root.querySelector<HTMLInputElement>('[data-ptbl-search]');
     const clearBtn = root.querySelector<HTMLButtonElement>('[data-ptbl-clear]');

@@ -121,7 +121,12 @@ const credit =
     margin-bottom: var(--sp-5);
   }
 
-  .crumbs a { color: var(--text-muted); text-decoration: none; }
+  .crumbs a {
+    display: inline-block;
+    padding-block: 3px;
+    color: var(--text-muted);
+    text-decoration: none;
+  }
   .crumbs a:hover { color: var(--accent); text-decoration: underline; }
 
   .head-main h1 {
@@ -220,6 +225,7 @@ const credit =
   .contribute-link {
     display: inline-flex;
     align-items: center;
+    padding-block: 3px;
     gap: var(--sp-2);
     font-size: var(--fs-sm);
     font-weight: 500;

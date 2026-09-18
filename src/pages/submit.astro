@@ -31,7 +31,7 @@ const steps = [
       <ol role="list" class="steps">
         {
           steps.map((s, i) => (
-            <li class="step" data-reveal style={`--reveal-delay:${i * 70}ms`}>
+            <li class="step" data-reveal style={`--reveal-delay:${Math.min(i * 70, 150)}ms`}>
               <span class="step-n">{s.n}</span>
               <h2>{s.title}</h2>
               <p>{s.body}</p>
@@ -146,7 +146,7 @@ const steps = [
     height: 40px;
     border-radius: var(--r-full);
     background: var(--accent);
-    color: var(--white);
+    color: var(--text-on-accent);
     font-weight: 700;
   }
 
@@ -268,8 +268,10 @@ const steps = [
       'input, textarea'
     );
 
+    // A for...of loop keeps control-flow narrowing intact; inside a forEach
+    // callback TypeScript cannot see the assignment and narrows firstBad to never.
     let firstBad: HTMLElement | null = null;
-    fields.forEach((f) => {
+    for (const f of fields) {
       clearError(f);
       if (f.hasAttribute('required') && !f.value.trim()) {
         showError(f, 'This field is required.');
@@ -281,7 +283,7 @@ const steps = [
         showError(f, 'Enter a valid URL, starting with https://');
         firstBad ??= f;
       }
-    });
+    }
 
     if (firstBad) {
       firstBad.focus();

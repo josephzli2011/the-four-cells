@@ -1,0 +1,536 @@
+---
+import Icon from './Icon.astro';
+import { brand, courses } from '../data/site';
+
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/' ? path === '/' : path.startsWith(href);
+
+const groups = ['Science', 'Mathematics', 'Engineering'] as const;
+const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
+---
+
+<header class="hdr" data-header>
+  <div class="container hdr-inner">
+    <a href="/" class="logo" aria-label={`${brand.name} — home`}>
+      <span class="logo-mark" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </span>
+      <span class="logo-text">{brand.name}</span>
+    </a>
+
+    <nav class="nav" aria-label="Primary">
+      <div class="nav-item has-menu">
+        <button
+          class:list={['nav-link', { 'is-active': isActive('/courses') }]}
+          aria-expanded="false"
+          aria-controls="courses-menu"
+          data-menu-trigger
+        >
+          Courses
+          <Icon name="curve" size={14} class="chev" />
+        </button>
+
+        <div class="mega" id="courses-menu" data-menu hidden>
+          <div class="mega-inner">
+            {
+              groups.map((group) => (
+                <div class="mega-col">
+                  <p class="mega-heading">{group}</p>
+                  <ul role="list">
+                    {navCourses
+                      .filter((c) => c.group === group)
+                      .map((c) => (
+                        <li>
+                          <a href={`/courses/${c.slug}`} class="mega-link">
+                            <span class="mega-icon">
+                              <Icon name={c.icon} size={18} />
+                            </span>
+                            <span>
+                              <span class="mega-title">{c.title}</span>
+                              <span class="mega-blurb">{c.blurb}</span>
+                            </span>
+                          </a>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))
+            }
+          </div>
+          <a href="/courses" class="mega-all">
+            Browse all courses <Icon name="arrow" size={16} class="btn-arrow" />
+          </a>
+        </div>
+      </div>
+
+      <a href="/issues" class:list={['nav-link', { 'is-active': isActive('/issues') }]}>
+        Issues
+      </a>
+      <a href="/csad" class:list={['nav-link', { 'is-active': isActive('/csad') }]}>
+        Tutoring
+      </a>
+      <a href="/about" class:list={['nav-link', { 'is-active': isActive('/about') }]}>
+        About
+      </a>
+    </nav>
+
+    <div class="hdr-actions">
+      <button class="icon-btn" data-search-open aria-label="Search (press /)">
+        <Icon name="search" size={19} />
+      </button>
+      <button class="icon-btn theme-btn" data-theme-toggle aria-label="Switch theme">
+        <Icon name="sun" size={19} class="i-sun" />
+        <Icon name="moon" size={19} class="i-moon" />
+      </button>
+      <a href="/submit" class="btn btn-sm hdr-cta">Submit an Article</a>
+      <button
+        class="icon-btn menu-btn"
+        data-drawer-toggle
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="mobile-drawer"
+      >
+        <Icon name="menu" size={22} class="i-menu" />
+        <Icon name="close" size={22} class="i-close" />
+      </button>
+    </div>
+  </div>
+
+  <div class="scroll-bar" data-scroll-progress aria-hidden="true"></div>
+</header>
+
+<div class="drawer" id="mobile-drawer" data-drawer hidden>
+  <nav class="drawer-inner container" aria-label="Mobile">
+    <p class="drawer-heading">Courses</p>
+    <ul role="list" class="drawer-grid">
+      {
+        navCourses.map((c) => (
+          <li>
+            <a href={`/courses/${c.slug}`} class="drawer-course">
+              <Icon name={c.icon} size={18} />
+              {c.title}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="drawer-heading">More</p>
+    <ul role="list" class="drawer-list">
+      <li><a href="/issues">Issues</a></li>
+      <li><a href="/csad">CSAD™ Virtual Tutoring</a></li>
+      <li><a href="/about">Our Team</a></li>
+      <li><a href="/submit">Submit an Article</a></li>
+    </ul>
+    <a href="/submit" class="btn drawer-cta">Submit an Article</a>
+  </nav>
+</div>
+
+<style>
+  .hdr {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--dur) var(--ease),
+      box-shadow var(--dur) var(--ease);
+  }
+
+  .hdr[data-stuck] {
+    border-bottom-color: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .hdr-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-5);
+    height: var(--header-h);
+  }
+
+  /* ---- Logo: four cells, animated ---- */
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: var(--fs-lg);
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+  }
+
+  .logo-mark {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3px;
+    width: 26px;
+    height: 26px;
+  }
+
+  .logo-mark span {
+    background: var(--accent);
+    border-radius: 3px;
+    transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+  }
+
+  .logo-mark span:nth-child(1) { transition-delay: 0ms; }
+  .logo-mark span:nth-child(2) { transition-delay: 40ms; }
+  .logo-mark span:nth-child(3) { transition-delay: 120ms; }
+  .logo-mark span:nth-child(4) { transition-delay: 80ms; }
+
+  .logo:hover .logo-mark span:nth-child(1) { transform: translate(-1.5px, -1.5px); }
+  .logo:hover .logo-mark span:nth-child(2) { transform: translate(1.5px, -1.5px); }
+  .logo:hover .logo-mark span:nth-child(3) { transform: translate(-1.5px, 1.5px); }
+  .logo:hover .logo-mark span:nth-child(4) { transform: translate(1.5px, 1.5px); }
+
+  /* ---- Nav ---- */
+  .nav {
+    display: none;
+    align-items: center;
+    gap: var(--sp-1);
+    margin-right: auto;
+  }
+
+  @media (min-width: 1000px) {
+    .nav { display: flex; }
+  }
+
+  .nav-item { position: relative; }
+
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-sm);
+    color: var(--text);
+    text-decoration: none;
+    font-size: var(--fs-sm);
+    font-weight: 400;
+    transition: background-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
+  }
+
+  .nav-link:hover { background: var(--bg-subtle); }
+  .nav-link.is-active { color: var(--accent); font-weight: 500; }
+
+  .chev {
+    transition: transform var(--dur) var(--ease);
+    opacity: 0.55;
+  }
+
+  [aria-expanded='true'] .chev { transform: rotate(180deg); }
+
+  /* ---- Mega menu ---- */
+  .mega {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    translate: -50% 0;
+    width: min(76vw, 720px);
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--sp-5);
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+
+  .mega[hidden] { display: none; }
+  .mega.is-open { opacity: 1; transform: none; }
+
+  .mega-inner {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-5);
+  }
+
+  .mega-heading {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: var(--sp-3);
+  }
+
+  .mega-col ul { display: grid; gap: 2px; }
+
+  .mega-link {
+    display: flex;
+    gap: var(--sp-3);
+    padding: var(--sp-2);
+    border-radius: var(--r-sm);
+    color: var(--text);
+    text-decoration: none;
+    transition: background-color var(--dur-fast) var(--ease);
+  }
+
+  .mega-link:hover { background: var(--accent-subtle); }
+
+  .mega-icon {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: var(--r-sm);
+    background: var(--accent-subtle);
+    color: var(--accent);
+  }
+
+  .mega-link:hover .mega-icon { background: var(--accent); color: var(--white); }
+
+  .mega-title { display: block; font-size: var(--fs-sm); font-weight: 500; }
+
+  .mega-blurb {
+    display: block;
+    font-size: var(--fs-xs);
+    line-height: 1.45;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .mega-all {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-top: var(--sp-5);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--border);
+    width: 100%;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .mega-all:hover .btn-arrow { transform: translateX(3px); }
+  .mega-all .btn-arrow { transition: transform var(--dur) var(--ease); }
+
+  /* ---- Actions ---- */
+  .hdr-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-left: auto;
+  }
+
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--r-full);
+    color: var(--text-muted);
+    transition: background-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
+  }
+
+  .icon-btn:hover { background: var(--bg-subtle); color: var(--text); }
+
+  .theme-btn { position: relative; }
+
+  .theme-btn :global(.i-moon) { display: none; }
+  :global(:root[data-theme='dark']) .theme-btn :global(.i-sun) { display: none; }
+  :global(:root[data-theme='dark']) .theme-btn :global(.i-moon) { display: block; }
+
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .theme-btn :global(.i-sun) { display: none; }
+    :global(:root:not([data-theme='light'])) .theme-btn :global(.i-moon) { display: block; }
+  }
+
+  .hdr-cta { display: none; }
+
+  @media (min-width: 1000px) {
+    .hdr-cta { display: inline-flex; }
+  }
+
+  .menu-btn { position: relative; }
+  .menu-btn :global(.i-close) { display: none; }
+  .menu-btn[aria-expanded='true'] :global(.i-menu) { display: none; }
+  .menu-btn[aria-expanded='true'] :global(.i-close) { display: block; }
+
+  @media (min-width: 1000px) {
+    .menu-btn { display: none; }
+  }
+
+  /* ---- Scroll progress ---- */
+  .scroll-bar {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    transform: scaleX(var(--progress, 0));
+    transform-origin: 0 50%;
+    background: linear-gradient(90deg, var(--accent), var(--blue-400));
+  }
+
+  /* ---- Mobile drawer ---- */
+  .drawer {
+    position: fixed;
+    inset: var(--header-h) 0 0;
+    z-index: 99;
+    background: var(--bg);
+    overflow-y: auto;
+    opacity: 0;
+    transition: opacity var(--dur) var(--ease);
+  }
+
+  .drawer[hidden] { display: none; }
+  .drawer.is-open { opacity: 1; }
+
+  .drawer-inner { padding-block: var(--sp-6) var(--sp-8); }
+
+  .drawer-heading {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: var(--sp-3);
+  }
+
+  .drawer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-6);
+  }
+
+  .drawer-course {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    color: var(--text);
+    text-decoration: none;
+    font-size: var(--fs-sm);
+  }
+
+  .drawer-course:hover { border-color: var(--accent); color: var(--accent); }
+
+  .drawer-list { display: grid; gap: var(--sp-1); margin-bottom: var(--sp-6); }
+
+  .drawer-list a {
+    display: block;
+    padding: var(--sp-3) 0;
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .drawer-cta { width: 100%; }
+</style>
+
+<script>
+  // ---------- Sticky shadow + scroll progress ----------
+  const header = document.querySelector<HTMLElement>('[data-header]');
+  const bar = document.querySelector<HTMLElement>('[data-scroll-progress]');
+
+  let ticking = false;
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const y = window.scrollY;
+      header?.toggleAttribute('data-stuck', y > 4);
+      if (bar) {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        bar.style.setProperty('--progress', max > 0 ? String(y / max) : '0');
+      }
+      ticking = false;
+    });
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // ---------- Mega menu ----------
+  const trigger = document.querySelector<HTMLButtonElement>('[data-menu-trigger]');
+  const menu = document.querySelector<HTMLElement>('[data-menu]');
+  const navItem = trigger?.closest('.nav-item');
+  let closeTimer: number | undefined;
+
+  const openMenu = () => {
+    if (!menu || !trigger) return;
+    window.clearTimeout(closeTimer);
+    menu.hidden = false;
+    requestAnimationFrame(() => menu.classList.add('is-open'));
+    trigger.setAttribute('aria-expanded', 'true');
+  };
+
+  const closeMenu = (immediate = false) => {
+    if (!menu || !trigger) return;
+    menu.classList.remove('is-open');
+    trigger.setAttribute('aria-expanded', 'false');
+    window.clearTimeout(closeTimer);
+    closeTimer = window.setTimeout(
+      () => { menu.hidden = true; },
+      immediate ? 0 : 200
+    );
+  };
+
+  trigger?.addEventListener('click', () => {
+    trigger.getAttribute('aria-expanded') === 'true' ? closeMenu() : openMenu();
+  });
+
+  navItem?.addEventListener('mouseenter', openMenu);
+  navItem?.addEventListener('mouseleave', () => closeMenu());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && trigger?.getAttribute('aria-expanded') === 'true') {
+      closeMenu(true);
+      trigger.focus();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!navItem?.contains(e.target as Node)) closeMenu(true);
+  });
+
+  // ---------- Mobile drawer ----------
+  const drawerBtn = document.querySelector<HTMLButtonElement>('[data-drawer-toggle]');
+  const drawer = document.querySelector<HTMLElement>('[data-drawer]');
+
+  drawerBtn?.addEventListener('click', () => {
+    if (!drawer) return;
+    const open = drawerBtn.getAttribute('aria-expanded') === 'true';
+    if (open) {
+      drawer.classList.remove('is-open');
+      drawerBtn.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+      window.setTimeout(() => { drawer.hidden = true; }, 200);
+    } else {
+      drawer.hidden = false;
+      requestAnimationFrame(() => drawer.classList.add('is-open'));
+      drawerBtn.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+  });
+
+  // ---------- Theme toggle ----------
+  const themeBtn = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  themeBtn?.addEventListener('click', () => {
+    const root = document.documentElement;
+    const current =
+      root.dataset.theme ??
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = current === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try {
+      localStorage.setItem('tfc-theme', next);
+    } catch (e) {
+      /* private mode — theme still applies for this page load */
+    }
+  });
+</script>

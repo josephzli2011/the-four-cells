@@ -1,0 +1,181 @@
+---
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import { courses } from '../../data/site';
+
+const groups = ['Science', 'Mathematics', 'Engineering'] as const;
+const totalLessons = courses.reduce((n, c) => n + c.lessons.length, 0);
+---
+
+<Base
+  title="Courses"
+  description="Nine STEM subjects — biology, chemistry, physics, astronomy, algebra, geometry, trigonometry, calculus, and mechatronics."
+>
+  <section class="page-head">
+    <div class="container">
+      <p class="eyebrow"><Icon name="book" size={14} /> Courses</p>
+      <h1>Nine subjects, one place</h1>
+      <p class="lede">
+        Science, mathematics, and engineering tracks built and maintained by students.
+        {totalLessons} interactive {totalLessons === 1 ? 'lesson is' : 'lessons are'} live now,
+        with more in progress.
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      {
+        groups.map((group) => {
+          const list = courses.filter((c) => c.group === group);
+          if (!list.length) return null;
+          return (
+            <div class="group">
+              <h2 class="group-title">
+                {group}
+                <span class="group-count">{list.length}</span>
+              </h2>
+              <ul role="list" class="grid">
+                {list.map((c, i) => (
+                  <li data-reveal style={`--reveal-delay:${i * 50}ms`}>
+                    <a href={`/courses/${c.slug}`} class="subject">
+                      <span class="subject-icon">
+                        <Icon name={c.icon} size={22} />
+                      </span>
+                      <span class="subject-name">{c.title}</span>
+                      <span class="subject-blurb">{c.blurb}</span>
+                      <span class="subject-foot">
+                        {c.lessons.length > 0 ? (
+                          <span class="subject-count">
+                            {c.lessons.length} {c.lessons.length === 1 ? 'lesson' : 'lessons'}
+                          </span>
+                        ) : (
+                          <span class="subject-soon">In progress</span>
+                        )}
+                        <Icon name="arrow" size={15} class="btn-arrow" />
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })
+      }
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page-head {
+    padding-block: clamp(2.5rem, 6vw, 5rem) 0;
+  }
+
+  .page-head h1 {
+    font-size: var(--fs-3xl);
+    font-weight: 500;
+    margin-block: var(--sp-3) var(--sp-4);
+  }
+
+  .lede {
+    max-width: 62ch;
+    font-size: var(--fs-lg);
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .group + .group { margin-top: var(--sp-8); }
+
+  .group-title {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    font-size: var(--fs-xl);
+    font-weight: 500;
+    margin-bottom: var(--sp-5);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .group-count {
+    display: grid;
+    place-items: center;
+    min-width: 26px;
+    height: 26px;
+    padding-inline: 8px;
+    border-radius: var(--r-full);
+    background: var(--accent-subtle);
+    color: var(--accent);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--sp-3);
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+
+  .subject {
+    display: grid;
+    gap: var(--sp-2);
+    height: 100%;
+    padding: var(--sp-5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    color: var(--text);
+    text-decoration: none;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
+  }
+
+  .subject:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-border);
+  }
+
+  .subject-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
+    background: var(--accent-subtle);
+    color: var(--accent);
+    transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .subject:hover .subject-icon { background: var(--accent); color: var(--white); }
+
+  .subject-name { font-size: var(--fs-lg); font-weight: 500; }
+
+  .subject-blurb {
+    font-size: var(--fs-sm);
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin-bottom: auto;
+  }
+
+  .subject-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--border);
+    color: var(--accent);
+  }
+
+  .subject-count { font-size: var(--fs-xs); font-weight: 500; }
+
+  .subject-soon {
+    font-size: var(--fs-xs);
+    color: var(--text-faint);
+  }
+
+  .subject :global(.btn-arrow) { transition: transform var(--dur) var(--ease); }
+  .subject:hover :global(.btn-arrow) { transform: translateX(4px); }
+</style>

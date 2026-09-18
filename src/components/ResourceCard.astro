@@ -1,0 +1,143 @@
+---
+import CoverArt from './CoverArt.astro';
+import Icon from './Icon.astro';
+
+interface Props {
+  href: string;
+  title: string;
+  blurb?: string;
+  tag?: string;
+  meta?: string;
+  cta?: string;
+  seed?: string;
+  src?: string;
+  ratio?: string;
+  featured?: boolean;
+}
+
+const {
+  href,
+  title,
+  blurb,
+  tag,
+  meta,
+  cta = 'Learn More',
+  seed,
+  src,
+  ratio = '16 / 10',
+  featured = false,
+} = Astro.props;
+---
+
+<article class:list={['card', 'res', { 'is-featured': featured }]}>
+  <CoverArt seed={seed ?? href} src={src} ratio={ratio} alt="" />
+
+  <div class="res-body">
+    {tag && <span class="tag">{tag}</span>}
+    <h3 class="res-title">
+      <a href={href} class="card-link">{title}</a>
+    </h3>
+    {blurb && <p class="res-blurb">{blurb}</p>}
+    <div class="res-foot">
+      {meta && <span class="res-meta">{meta}</span>}
+      <span class="res-cta">
+        {cta}
+        <Icon name="arrow" size={15} class="btn-arrow" />
+      </span>
+    </div>
+  </div>
+</article>
+
+<style>
+  .res {
+    height: 100%;
+  }
+
+  .res-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-5);
+    flex: 1;
+  }
+
+  .res-title {
+    font-size: var(--fs-lg);
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  .res-title a {
+    color: var(--text);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .card:hover .res-title a {
+    color: var(--accent);
+  }
+
+  .res-blurb {
+    font-size: var(--fs-sm);
+    line-height: 1.65;
+    color: var(--text-muted);
+    margin-bottom: auto;
+  }
+
+  .res-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+    margin-top: var(--sp-2);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--border);
+  }
+
+  .res-meta {
+    font-size: var(--fs-xs);
+    color: var(--text-faint);
+  }
+
+  .res-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--accent);
+    margin-left: auto;
+  }
+
+  .res-cta :global(.btn-arrow) {
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .card:hover .res-cta :global(.btn-arrow) {
+    transform: translateX(4px);
+  }
+
+  /* Featured: side-by-side on wide screens */
+  @media (min-width: 860px) {
+    .is-featured {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      align-items: stretch;
+    }
+
+    .is-featured .res-body {
+      padding: var(--sp-7);
+      justify-content: center;
+    }
+
+    .is-featured .res-title {
+      font-size: var(--fs-2xl);
+      letter-spacing: var(--ls-tight);
+    }
+
+    .is-featured .res-blurb {
+      font-size: var(--fs-base);
+    }
+  }
+</style>

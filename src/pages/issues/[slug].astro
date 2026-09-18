@@ -1,0 +1,225 @@
+---
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import CoverArt from '../../components/CoverArt.astro';
+import { issues } from '../../data/site';
+
+export function getStaticPaths() {
+  return issues.map((issue) => ({
+    params: { slug: issue.slug },
+    props: { issue },
+  }));
+}
+
+const { issue } = Astro.props;
+const others = issues.filter((i) => i.slug !== issue.slug);
+---
+
+<Base title={issue.title} description={issue.subtitle ?? issue.title} ogType="article">
+  <article class="paper">
+    <div class="container container-narrow">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a href="/issues">Issues</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{issue.kind}</span>
+      </nav>
+
+      <span class="tag">{issue.kind}</span>
+      <h1>{issue.title}</h1>
+      {issue.subtitle && <p class="subtitle">{issue.subtitle}</p>}
+
+      <div class="byline">
+        <div class="authors">
+          {
+            issue.authors.map((a) => (
+              <span class="author">
+                <span class="avatar" aria-hidden="true">
+                  {a
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')}
+                </span>
+                {a}
+              </span>
+            ))
+          }
+        </div>
+        <time datetime={issue.dateISO}>{issue.date}</time>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="hero-art" data-reveal>
+        <CoverArt seed={issue.slug} ratio="21 / 9" />
+      </div>
+    </div>
+
+    <div class="container container-narrow">
+      <div class="body">
+        <div class="pending">
+          <Icon name="book" size={22} />
+          <div>
+            <h2>Full text</h2>
+            <p>
+              The complete {issue.kind.toLowerCase()} is being migrated from the previous
+              site. Once the source document is available it will be embedded here in
+              full, with a downloadable PDF.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {
+        others.length > 0 && (
+          <aside class="more">
+            <h2>More from Issues</h2>
+            <ul role="list">
+              {others.map((o) => (
+                <li>
+                  <a href={`/issues/${o.slug}`}>
+                    <span class="more-kind">{o.kind}</span>
+                    <span class="more-title">{o.title}</span>
+                    <Icon name="arrow" size={16} class="btn-arrow" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        )
+      }
+    </div>
+  </article>
+</Base>
+
+<style>
+  .paper { padding-block: clamp(2rem, 5vw, 3.5rem) 0; }
+
+  .crumbs {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    color: var(--text-faint);
+    margin-bottom: var(--sp-5);
+  }
+
+  .crumbs a { color: var(--text-muted); text-decoration: none; }
+  .crumbs a:hover { color: var(--accent); text-decoration: underline; }
+
+  h1 {
+    font-size: var(--fs-3xl);
+    font-weight: 500;
+    line-height: 1.2;
+    margin-block: var(--sp-4) var(--sp-4);
+  }
+
+  .subtitle {
+    font-size: var(--fs-lg);
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  .byline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    margin-block: var(--sp-6);
+    padding-block: var(--sp-4);
+    border-block: 1px solid var(--border);
+  }
+
+  .authors { display: flex; flex-wrap: wrap; gap: var(--sp-4); }
+
+  .author {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+  }
+
+  .avatar {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--r-full);
+    background: var(--accent-subtle);
+    color: var(--accent);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+  }
+
+  .byline time { font-size: var(--fs-sm); color: var(--text-faint); }
+
+  .hero-art {
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    margin-bottom: var(--sp-7);
+  }
+
+  .pending {
+    display: flex;
+    gap: var(--sp-4);
+    padding: var(--sp-6);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--r-lg);
+    background: var(--bg-subtle);
+    color: var(--accent);
+  }
+
+  .pending h2 { font-size: var(--fs-lg); font-weight: 500; color: var(--text); }
+
+  .pending p {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-sm);
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+
+  .more { margin-top: var(--sp-8); }
+
+  .more h2 {
+    font-size: var(--fs-lg);
+    font-weight: 500;
+    margin-bottom: var(--sp-4);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .more ul { display: grid; gap: var(--sp-2); }
+
+  .more a {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color var(--dur) var(--ease);
+  }
+
+  .more a:hover { border-color: var(--accent); }
+
+  .more-kind {
+    font-size: var(--fs-xs);
+    color: var(--accent);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .more-title { font-size: var(--fs-sm); }
+
+  .more :global(.btn-arrow) {
+    margin-left: auto;
+    color: var(--accent);
+    transition: transform var(--dur) var(--ease);
+    flex-shrink: 0;
+  }
+
+  .more a:hover :global(.btn-arrow) { transform: translateX(3px); }
+</style>

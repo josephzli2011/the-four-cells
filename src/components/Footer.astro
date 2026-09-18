@@ -1,0 +1,180 @@
+---
+import Icon from './Icon.astro';
+import { brand, footerNav, courses } from '../data/site';
+
+const year = new Date().getFullYear();
+const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
+---
+
+<footer class="ftr">
+  <div class="container">
+    <div class="ftr-top">
+      <div class="ftr-brand">
+        <a href="/" class="ftr-logo">
+          <span class="logo-mark" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </span>
+          <span>{brand.name}</span>
+        </a>
+        <p class="ftr-mission">{brand.mission}</p>
+      </div>
+
+      <div class="ftr-col">
+        <p class="ftr-heading">Courses</p>
+        <ul role="list">
+          {
+            navCourses.slice(0, 6).map((c) => (
+              <li>
+                <a href={`/courses/${c.slug}`}>{c.title}</a>
+              </li>
+            ))
+          }
+          <li><a href="/courses" class="ftr-more">All courses →</a></li>
+        </ul>
+      </div>
+
+      {
+        footerNav.map((col) => (
+          <div class="ftr-col">
+            <p class="ftr-heading">{col.heading}</p>
+            <ul role="list">
+              {col.links.map((l) => (
+                <li>
+                  <a href={l.href}>{l.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="ftr-bottom">
+      <small>{brand.copyright.replace('2026', String(year))}</small>
+      <a href="/submit" class="ftr-cta">
+        <Icon name="mail" size={16} />
+        Submit an Article
+      </a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .ftr {
+    background: var(--accent);
+    color: var(--white);
+    margin-top: var(--sp-9);
+    padding-block: var(--sp-8) var(--sp-5);
+  }
+
+  .ftr-top {
+    display: grid;
+    gap: var(--sp-7);
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 720px) {
+    .ftr-top { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (min-width: 1000px) {
+    .ftr-top { grid-template-columns: 2.2fr 1fr 1fr 1fr; gap: var(--sp-6); }
+  }
+
+  .ftr-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    color: var(--white);
+    text-decoration: none;
+    font-size: var(--fs-xl);
+    font-weight: 500;
+    margin-bottom: var(--sp-4);
+  }
+
+  .logo-mark {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .logo-mark span {
+    background: var(--white);
+    border-radius: 3px;
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .ftr-logo:hover .logo-mark span:nth-child(1) { transform: translate(-2px, -2px); }
+  .ftr-logo:hover .logo-mark span:nth-child(2) { transform: translate(2px, -2px); }
+  .ftr-logo:hover .logo-mark span:nth-child(3) { transform: translate(-2px, 2px); }
+  .ftr-logo:hover .logo-mark span:nth-child(4) { transform: translate(2px, 2px); }
+
+  .ftr-mission {
+    max-width: 44ch;
+    font-size: var(--fs-sm);
+    line-height: 1.75;
+    color: color-mix(in srgb, var(--white) 88%, transparent);
+  }
+
+  .ftr-heading {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--white) 65%, transparent);
+    margin-bottom: var(--sp-4);
+  }
+
+  .ftr-col ul { display: grid; gap: var(--sp-2); }
+
+  .ftr-col a {
+    color: color-mix(in srgb, var(--white) 92%, transparent);
+    text-decoration: none;
+    font-size: var(--fs-sm);
+    transition: color var(--dur-fast) var(--ease),
+      padding-left var(--dur-fast) var(--ease);
+  }
+
+  .ftr-col a:hover {
+    color: var(--white);
+    padding-left: 4px;
+    text-decoration: underline;
+  }
+
+  .ftr-more { font-weight: 500; }
+
+  .ftr-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    margin-top: var(--sp-8);
+    padding-top: var(--sp-5);
+    border-top: 1px solid color-mix(in srgb, var(--white) 22%, transparent);
+  }
+
+  .ftr-bottom small {
+    font-size: var(--fs-xs);
+    color: color-mix(in srgb, var(--white) 72%, transparent);
+  }
+
+  .ftr-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 0.55em 1.2em;
+    border: 1px solid color-mix(in srgb, var(--white) 45%, transparent);
+    border-radius: var(--r-full);
+    color: var(--white);
+    text-decoration: none;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    transition: background-color var(--dur) var(--ease),
+      color var(--dur) var(--ease);
+  }
+
+  .ftr-cta:hover { background: var(--white); color: var(--accent); }
+</style>

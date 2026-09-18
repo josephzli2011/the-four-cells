@@ -1,0 +1,178 @@
+---
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import ResourceCard from '../../components/ResourceCard.astro';
+import { issues } from '../../data/site';
+
+const sorted = [...issues].sort((a, b) => b.dateISO.localeCompare(a.dateISO));
+const kinds = [...new Set(issues.map((i) => i.kind))];
+---
+
+<Base
+  title="Issues"
+  description="Research papers, pamphlets, and magazines published by thefourcells."
+>
+  <section class="page-head">
+    <div class="container">
+      <p class="eyebrow"><Icon name="book" size={14} /> Issues</p>
+      <h1>Published work</h1>
+      <p class="lede">
+        Research papers, pamphlets, and magazines written by students. Every piece is
+        free to read.
+      </p>
+
+      <div class="filters" role="group" aria-label="Filter by type">
+        <button class="chip is-on" data-filter="all" aria-pressed="true">
+          All <span class="chip-n">{issues.length}</span>
+        </button>
+        {
+          kinds.map((k) => (
+            <button class="chip" data-filter={k} aria-pressed="false">
+              {k}
+              <span class="chip-n">{issues.filter((i) => i.kind === k).length}</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="grid" data-issue-grid>
+        {
+          sorted.map((issue, i) => (
+            <div data-kind={issue.kind} data-reveal style={`--reveal-delay:${i * 70}ms`}>
+              <ResourceCard
+                href={`/issues/${issue.slug}`}
+                title={issue.title}
+                blurb={issue.subtitle}
+                tag={issue.kind}
+                meta={`${issue.authors.join(', ')} · ${issue.date}`}
+                cta={issue.cta}
+                seed={issue.slug}
+              />
+            </div>
+          ))
+        }
+      </div>
+      <p class="no-results" data-no-results hidden>Nothing matches that filter.</p>
+
+      <div class="cta-band" data-reveal>
+        <div>
+          <h2>Have something to publish?</h2>
+          <p>We review and publish student writing across every STEM field.</p>
+        </div>
+        <a href="/submit" class="btn">
+          Submit an Article
+          <Icon name="arrow" size={17} class="btn-arrow" />
+        </a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page-head { padding-block: clamp(2.5rem, 6vw, 5rem) 0; }
+
+  .page-head h1 {
+    font-size: var(--fs-3xl);
+    font-weight: 500;
+    margin-block: var(--sp-3) var(--sp-4);
+  }
+
+  .lede {
+    max-width: 62ch;
+    font-size: var(--fs-lg);
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-top: var(--sp-6);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 0.5em 1em;
+    border: 1px solid var(--border);
+    border-radius: var(--r-full);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
+    transition: all var(--dur-fast) var(--ease);
+  }
+
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  .chip.is-on {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-on-accent);
+  }
+
+  .chip-n {
+    font-size: var(--fs-xs);
+    opacity: 0.7;
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--sp-5);
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+
+  .no-results {
+    padding: var(--sp-7);
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .cta-band {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-5);
+    margin-top: var(--sp-8);
+    padding: var(--sp-6);
+    border-radius: var(--r-lg);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+  }
+
+  .cta-band h2 { font-size: var(--fs-xl); font-weight: 500; }
+  .cta-band p { color: var(--text-muted); font-size: var(--fs-sm); margin-top: var(--sp-2); }
+</style>
+
+<script>
+  const chips = document.querySelectorAll<HTMLButtonElement>('[data-filter]');
+  const items = document.querySelectorAll<HTMLElement>('[data-issue-grid] > [data-kind]');
+  const empty = document.querySelector<HTMLElement>('[data-no-results]');
+
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const want = chip.dataset.filter;
+
+      chips.forEach((c) => {
+        const on = c === chip;
+        c.classList.toggle('is-on', on);
+        c.setAttribute('aria-pressed', String(on));
+      });
+
+      let shown = 0;
+      items.forEach((item) => {
+        const match = want === 'all' || item.dataset.kind === want;
+        item.hidden = !match;
+        if (match) shown++;
+      });
+
+      if (empty) empty.hidden = shown > 0;
+    });
+  });
+</script>

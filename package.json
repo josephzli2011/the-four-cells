@@ -1,0 +1,19 @@
+{
+  "name": "thefourcells",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "thefourcells — student-led STEM education platform",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "astro": "^5.6.1",
+    "@astrojs/sitemap": "^3.3.0",
+    "@fontsource/comfortaa": "^5.2.5"
+  }
+}

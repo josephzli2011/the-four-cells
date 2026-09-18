@@ -1,0 +1,253 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { courses } from '../data/site';
+
+const points = [
+  {
+    icon: 'quiz',
+    title: 'One-on-one sessions',
+    body: 'Bring a specific problem, a whole unit, or an exam you are dreading. Sessions are shaped around what you actually need.',
+  },
+  {
+    icon: 'cell',
+    title: 'Peer tutors',
+    body: 'Tutors are students who recently worked through the same material, so explanations land at the right level.',
+  },
+  {
+    icon: 'spark',
+    title: 'Free to use',
+    body: 'CSAD™ is part of what thefourcells does. There is no charge and no subscription.',
+  },
+];
+---
+
+<Base
+  title="CSAD™ Virtual Tutoring"
+  description="Free one-on-one virtual tutoring in STEM subjects, from students who recently learned the material themselves."
+>
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow"><Icon name="quiz" size={14} /> Tutoring</p>
+          <h1>CSAD™ Virtual Tutoring</h1>
+          <p class="lede">
+            Free one-on-one help in the subjects we teach — from students who
+            recently sat exactly where you're sitting.
+          </p>
+          <div class="actions">
+            <a href="/about#contact" class="btn">
+              Request a session
+              <Icon name="arrow" size={17} class="btn-arrow" />
+            </a>
+            <a href="/courses" class="btn btn-secondary">Browse subjects first</a>
+          </div>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <div class="orbit">
+            <span class="core"><Icon name="cell" size={34} /></span>
+            <span class="sat s1"></span>
+            <span class="sat s2"></span>
+            <span class="sat s3"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ul role="list" class="points">
+        {
+          points.map((p, i) => (
+            <li class="point" data-reveal style={`--reveal-delay:${i * 70}ms`}>
+              <span class="point-icon">
+                <Icon name={p.icon} size={22} />
+              </span>
+              <h2>{p.title}</h2>
+              <p>{p.body}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="container">
+      <h2 class="sec-title">Subjects we tutor</h2>
+      <ul role="list" class="chips">
+        {
+          courses.map((c) => (
+            <li>
+              <a href={`/courses/${c.slug}`} class="chip">
+                <Icon name={c.icon} size={16} />
+                {c.title}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <p class="note">
+        <Icon name="spark" size={15} />
+        <span>
+          Scheduling details and the tutor roster are still being migrated from the
+          previous site.
+        </span>
+      </p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero { padding-block: clamp(2.5rem, 6vw, 5rem) 0; }
+
+  .hero-grid {
+    display: grid;
+    gap: var(--sp-7);
+    align-items: center;
+  }
+
+  @media (min-width: 880px) {
+    .hero-grid { grid-template-columns: 1.15fr 0.85fr; }
+  }
+
+  h1 {
+    font-size: var(--fs-3xl);
+    font-weight: 500;
+    margin-block: var(--sp-3) var(--sp-4);
+  }
+
+  .lede {
+    max-width: 52ch;
+    font-size: var(--fs-lg);
+    color: var(--text-muted);
+    line-height: 1.75;
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-6); }
+
+  .hero-art { display: grid; place-items: center; }
+
+  .orbit {
+    position: relative;
+    width: min(280px, 60vw);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+  }
+
+  .core {
+    display: grid;
+    place-items: center;
+    width: 90px;
+    height: 90px;
+    border-radius: var(--r-full);
+    background: linear-gradient(140deg, var(--accent), var(--blue-700));
+    color: var(--white);
+    box-shadow: var(--shadow-accent);
+  }
+
+  .sat {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--r-full);
+    border: 1px dashed var(--border-strong);
+    animation: spin 22s linear infinite;
+  }
+
+  .sat::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    translate: -50% 0;
+    border-radius: var(--r-full);
+    background: var(--accent);
+  }
+
+  .s2 { inset: 14%; animation-duration: 16s; animation-direction: reverse; }
+  .s3 { inset: 28%; animation-duration: 11s; }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sat { animation: none; }
+  }
+
+  .points {
+    display: grid;
+    gap: var(--sp-5);
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+
+  .point {
+    display: grid;
+    gap: var(--sp-3);
+    align-content: start;
+    padding: var(--sp-6);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+  }
+
+  .point-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: var(--r-md);
+    background: var(--accent-subtle);
+    color: var(--accent);
+  }
+
+  .point h2 { font-size: var(--fs-lg); font-weight: 500; }
+  .point p { font-size: var(--fs-sm); line-height: 1.7; color: var(--text-muted); }
+
+  .alt { background: var(--bg-subtle); }
+
+  .sec-title { font-size: var(--fs-xl); font-weight: 500; margin-bottom: var(--sp-5); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 0.55em 1.05em;
+    border: 1px solid var(--border);
+    border-radius: var(--r-full);
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    font-size: var(--fs-sm);
+    transition: all var(--dur-fast) var(--ease);
+  }
+
+  .chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .note {
+    display: flex;
+    gap: var(--sp-2);
+    max-width: 60ch;
+    margin-top: var(--sp-6);
+    padding: var(--sp-4);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--r-md);
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+  }
+
+  .note :global(svg) { flex-shrink: 0; margin-top: 3px; }
+</style>

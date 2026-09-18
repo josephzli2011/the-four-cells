@@ -1,0 +1,591 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import ResourceCard from '../components/ResourceCard.astro';
+import CoverArt from '../components/CoverArt.astro';
+import { brand, courses, issues } from '../data/site';
+
+const featured = issues.find((i) => i.featured)!;
+const rest = issues.filter((i) => !i.featured);
+const navCourses = courses.filter((c) => c.inNav || c.lessons.length > 0);
+
+// The three modules the original home page surfaced, now real components.
+const modules = [
+  {
+    href: '/courses/astronomy/mars',
+    eyebrow: 'Astronomy',
+    title: 'Explore Mars',
+    blurb:
+      'Learn about the red rocky planet, our supposed next destination for space travel.',
+    detail:
+      'Spin an interactive globe, compare Mars against Earth side by side, and trace six decades of missions to the surface.',
+    cta: 'Learn More',
+    icon: 'planet',
+    note: 'Source: NASA Visualization Technology Applications and Development (VTAD)',
+  },
+  {
+    href: '/courses/chemistry/periodic-table',
+    eyebrow: 'Chemistry',
+    title: 'Periodic Table',
+    blurb:
+      'Use this interactive Periodic Table database to explore the elements and their properties.',
+    detail:
+      'All 118 elements with electron configurations, electronegativity, and phase — searchable, filterable, and keyboard navigable.',
+    cta: 'Learn More',
+    icon: 'flask',
+  },
+  {
+    href: '/courses/geometry/understanding-triangle-angles',
+    eyebrow: 'Geometry',
+    title: 'Understanding Triangle Angles',
+    blurb: 'Take this quiz to test your knowledge on the angles of a triangle.',
+    detail:
+      'Drag the vertices of a live triangle to watch the angles change, then test yourself with worked explanations.',
+    cta: 'Take Quiz',
+    icon: 'triangle',
+  },
+];
+---
+
+<Base>
+  {/* ---------------- Hero ---------------- */}
+  <section class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="container hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow" data-reveal>
+          <Icon name="spark" size={14} />
+          Student-led STEM education
+        </p>
+        <h1 class="hero-title" data-reveal style="--reveal-delay:60ms">
+          Learn the hard things,<br />
+          <span class="grad">built by students</span>
+        </h1>
+        <p class="hero-lede" data-reveal style="--reveal-delay:120ms">
+          {brand.mission}
+        </p>
+        <div class="hero-actions" data-reveal style="--reveal-delay:180ms">
+          <a href="/courses" class="btn">
+            Browse courses
+            <Icon name="arrow" size={17} class="btn-arrow" />
+          </a>
+          <a href="/issues" class="btn btn-secondary">
+            <Icon name="book" size={17} />
+            Read the latest issue
+          </a>
+        </div>
+
+        <dl class="hero-stats" data-reveal style="--reveal-delay:240ms">
+          <div>
+            <dt>Subjects</dt>
+            <dd>{navCourses.length}</dd>
+          </div>
+          <div>
+            <dt>Published</dt>
+            <dd>{issues.length}</dd>
+          </div>
+          <div>
+            <dt>Cost</dt>
+            <dd>Free</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="hero-art" aria-hidden="true" data-reveal style="--reveal-delay:150ms">
+        <div class="cells">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ---------------- Featured issue ---------------- */}
+  <section class="section">
+    <div class="container">
+      <div class="head" data-reveal>
+        <h2 class="head-title">Latest research</h2>
+        <a href="/issues" class="head-link">
+          All issues <Icon name="arrow" size={16} class="btn-arrow" />
+        </a>
+      </div>
+
+      <div data-reveal style="--reveal-delay:80ms">
+        <ResourceCard
+          href={`/issues/${featured.slug}`}
+          title={featured.title}
+          blurb={featured.subtitle}
+          tag={featured.kind}
+          meta={`${featured.authors.join(', ')} · ${featured.date}`}
+          cta={featured.cta}
+          seed={featured.slug}
+          ratio="4 / 3"
+          featured
+        />
+      </div>
+    </div>
+  </section>
+
+  {/* ---------------- Subjects ---------------- */}
+  <section class="section subjects">
+    <div class="container">
+      <div class="head" data-reveal>
+        <div>
+          <h2 class="head-title">Subjects</h2>
+          <p class="head-sub">Nine tracks across science, mathematics, and engineering.</p>
+        </div>
+      </div>
+
+      <ul role="list" class="subject-grid">
+        {
+          navCourses.map((c, i) => (
+            <li data-reveal style={`--reveal-delay:${Math.min(i * 45, 300)}ms`}>
+              <a href={`/courses/${c.slug}`} class="subject">
+                <span class="subject-icon">
+                  <Icon name={c.icon} size={22} />
+                </span>
+                <span class="subject-name">{c.title}</span>
+                <span class="subject-blurb">{c.blurb}</span>
+                {c.lessons.length > 0 && (
+                  <span class="subject-count">
+                    {c.lessons.length} {c.lessons.length === 1 ? 'lesson' : 'lessons'}
+                  </span>
+                )}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  {/* ---------------- Interactive modules ---------------- */}
+  <section class="section">
+    <div class="container">
+      <div class="head" data-reveal>
+        <div>
+          <h2 class="head-title">Try it yourself</h2>
+          <p class="head-sub">
+            Interactive modules you can actually use — no sign-up, no downloads.
+          </p>
+        </div>
+      </div>
+
+      <div class="modules">
+        {
+          modules.map((m, i) => (
+            <article class="module" data-reveal style={`--reveal-delay:${i * 70}ms`}>
+              <div class="module-art">
+                <CoverArt seed={m.href} ratio="16 / 11" />
+              </div>
+              <div class="module-body">
+                <p class="eyebrow">
+                  <Icon name={m.icon} size={14} />
+                  {m.eyebrow}
+                </p>
+                <h3 class="module-title">
+                  <a href={m.href} class="card-link">{m.title}</a>
+                </h3>
+                <p class="module-blurb">{m.blurb}</p>
+                <p class="module-detail">{m.detail}</p>
+                <span class="res-cta">
+                  {m.cta}
+                  <Icon name="arrow" size={15} class="btn-arrow" />
+                </span>
+                {m.note && <p class="module-note">{m.note}</p>}
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  {/* ---------------- More issues ---------------- */}
+  {
+    rest.length > 0 && (
+      <section class="section">
+        <div class="container">
+          <div class="head" data-reveal>
+            <h2 class="head-title">From the archive</h2>
+          </div>
+          <div class="issue-grid">
+            {rest.map((issue, i) => (
+              <div data-reveal style={`--reveal-delay:${i * 70}ms`}>
+                <ResourceCard
+                  href={`/issues/${issue.slug}`}
+                  title={issue.title}
+                  blurb={issue.subtitle}
+                  tag={issue.kind}
+                  meta={`${issue.authors.join(', ')} · ${issue.date}`}
+                  cta={issue.cta}
+                  seed={issue.slug}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {/* ---------------- CSAD + Submit ---------------- */}
+  <section class="section">
+    <div class="container band-grid">
+      <a href="/csad" class="band band-accent" data-reveal>
+        <Icon name="quiz" size={26} />
+        <h3>CSAD™ Virtual Tutoring</h3>
+        <p>Free one-on-one help from students who just learned it themselves.</p>
+        <span class="band-cta">Find a tutor <Icon name="arrow" size={15} class="btn-arrow" /></span>
+      </a>
+      <a href="/submit" class="band" data-reveal style="--reveal-delay:80ms">
+        <Icon name="mail" size={26} />
+        <h3>Submit an Article</h3>
+        <p>Written something worth reading? We publish student work.</p>
+        <span class="band-cta">Send it in <Icon name="arrow" size={15} class="btn-arrow" /></span>
+      </a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ---------------- Hero ---------------- */
+  .hero {
+    position: relative;
+    padding-block: clamp(3rem, 8vw, 7rem) clamp(3rem, 7vw, 6rem);
+    overflow: hidden;
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: -30%;
+    left: 50%;
+    width: min(1100px, 130vw);
+    aspect-ratio: 1;
+    translate: -50% 0;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 16%, transparent) 0%,
+      transparent 62%
+    );
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .hero-inner {
+    display: grid;
+    gap: var(--sp-7);
+    align-items: center;
+  }
+
+  @media (min-width: 900px) {
+    .hero-inner {
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: var(--sp-8);
+    }
+  }
+
+  .hero-title {
+    font-size: var(--fs-4xl);
+    font-weight: 500;
+    line-height: var(--lh-tight);
+    letter-spacing: var(--ls-tight);
+    margin-block: var(--sp-4) var(--sp-5);
+  }
+
+  .grad {
+    background: linear-gradient(105deg, var(--accent), var(--blue-400) 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero-lede {
+    max-width: 56ch;
+    font-size: var(--fs-lg);
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-top: var(--sp-6);
+  }
+
+  .hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-6);
+    margin-top: var(--sp-7);
+    padding-top: var(--sp-5);
+    border-top: 1px solid var(--border);
+  }
+
+  .hero-stats dt {
+    font-size: var(--fs-xs);
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .hero-stats dd {
+    font-size: var(--fs-xl);
+    font-weight: 500;
+    color: var(--text);
+    margin-top: 2px;
+  }
+
+  /* Four cells, breathing */
+  .hero-art {
+    display: none;
+  }
+
+  @media (min-width: 900px) {
+    .hero-art {
+      display: grid;
+      place-items: center;
+    }
+  }
+
+  .cells {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(10px, 1.6vw, 18px);
+    width: min(300px, 28vw);
+    aspect-ratio: 1;
+  }
+
+  .cells span {
+    border-radius: clamp(14px, 2.4vw, 28px);
+    background: linear-gradient(140deg, var(--accent), var(--blue-500));
+    animation: float 7s var(--ease-in-out) infinite;
+    box-shadow: var(--shadow-accent);
+  }
+
+  .cells span:nth-child(1) { animation-delay: 0s; }
+  .cells span:nth-child(2) { animation-delay: 0.9s; opacity: 0.86; }
+  .cells span:nth-child(3) { animation-delay: 1.8s; opacity: 0.72; }
+  .cells span:nth-child(4) { animation-delay: 2.7s; opacity: 0.9; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-12px) scale(1.04); }
+  }
+
+  /* ---------------- Section heads ---------------- */
+  .head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--sp-6);
+  }
+
+  .head-title {
+    font-size: var(--fs-2xl);
+    font-weight: 500;
+  }
+
+  .head-sub {
+    margin-top: var(--sp-2);
+    color: var(--text-muted);
+    font-size: var(--fs-base);
+  }
+
+  .head-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .head-link :global(.btn-arrow) { transition: transform var(--dur) var(--ease); }
+  .head-link:hover :global(.btn-arrow) { transform: translateX(4px); }
+
+  /* ---------------- Subjects ---------------- */
+  .subjects { background: var(--bg-subtle); }
+
+  .subject-grid {
+    display: grid;
+    gap: var(--sp-3);
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  }
+
+  .subject {
+    position: relative;
+    display: grid;
+    gap: var(--sp-2);
+    height: 100%;
+    padding: var(--sp-5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    color: var(--text);
+    text-decoration: none;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
+  }
+
+  .subject:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-border);
+  }
+
+  .subject-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
+    background: var(--accent-subtle);
+    color: var(--accent);
+    margin-bottom: var(--sp-1);
+    transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .subject:hover .subject-icon { background: var(--accent); color: var(--white); }
+
+  .subject-name { font-size: var(--fs-lg); font-weight: 500; }
+
+  .subject-blurb {
+    font-size: var(--fs-sm);
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  .subject-count {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    color: var(--accent);
+    margin-top: var(--sp-1);
+  }
+
+  /* ---------------- Modules ---------------- */
+  .modules {
+    display: grid;
+    gap: var(--sp-5);
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  }
+
+  .module {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
+  }
+
+  .module:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-border);
+  }
+
+  .module-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-5);
+    flex: 1;
+  }
+
+  .module-title { font-size: var(--fs-xl); font-weight: 500; }
+
+  .module-title a {
+    color: var(--text);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .module:hover .module-title a { color: var(--accent); }
+
+  .module-blurb { font-size: var(--fs-sm); line-height: 1.65; }
+
+  .module-detail {
+    font-size: var(--fs-sm);
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin-bottom: auto;
+  }
+
+  .module-note {
+    font-size: var(--fs-xs);
+    color: var(--text-faint);
+    line-height: 1.5;
+  }
+
+  .res-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--accent);
+    margin-top: var(--sp-2);
+  }
+
+  .res-cta :global(.btn-arrow) { transition: transform var(--dur) var(--ease); }
+  .module:hover .res-cta :global(.btn-arrow) { transform: translateX(4px); }
+
+  /* ---------------- Issues ---------------- */
+  .issue-grid {
+    display: grid;
+    gap: var(--sp-5);
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+
+  /* ---------------- Bands ---------------- */
+  .band-grid {
+    display: grid;
+    gap: var(--sp-4);
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  }
+
+  .band {
+    display: grid;
+    gap: var(--sp-3);
+    padding: var(--sp-6);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+
+  .band:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+
+  .band h3 { font-size: var(--fs-xl); font-weight: 500; }
+
+  .band p { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.6; }
+
+  .band-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  .band :global(.btn-arrow) { transition: transform var(--dur) var(--ease); }
+  .band:hover :global(.btn-arrow) { transform: translateX(4px); }
+
+  .band-accent {
+    background: linear-gradient(140deg, var(--accent), var(--blue-700));
+    border-color: transparent;
+    color: var(--white);
+  }
+
+  .band-accent p { color: color-mix(in srgb, var(--white) 86%, transparent); }
+  .band-accent .band-cta { color: var(--white); }
+</style>

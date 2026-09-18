@@ -1,0 +1,132 @@
+---
+/**
+ * Deterministic generated cover art.
+ *
+ * The original site's imagery is hosted on signed googleusercontent URLs that
+ * can't be re-hosted here. This renders a stable, on-brand abstract cover
+ * derived from a seed string, so every card has real art instead of a grey box.
+ * Drop a real image in via the `src` prop to replace it — nothing else changes.
+ */
+interface Props {
+  seed: string;
+  src?: string;
+  alt?: string;
+  ratio?: string;
+  class?: string;
+}
+
+const { seed, src, alt = '', ratio = '4 / 3', class: klass = '' } = Astro.props;
+
+// FNV-1a — stable across builds, unlike Math.random()
+function hash(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+const h = hash(seed);
+const rand = (n: number, salt: number) => ((h >> salt) % n) + 1;
+
+const hue = 235 + (h % 26); // stay in the brand's blue-violet band
+const rot = (h % 90) - 45;
+const cx1 = 18 + rand(30, 3);
+const cy1 = 20 + rand(28, 7);
+const cx2 = 55 + rand(30, 11);
+const cy2 = 45 + rand(35, 5);
+const r1 = 22 + rand(16, 13);
+const r2 = 14 + rand(18, 17);
+const variant = h % 4;
+const uid = `c${h.toString(36)}`;
+---
+
+<div class={`cover ${klass}`} style={`--ratio:${ratio}`}>
+  {
+    src ? (
+      <img src={src} alt={alt} loading="lazy" decoding="async" />
+    ) : (
+      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id={`${uid}g`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color={`hsl(${hue} 96% 56%)`} />
+            <stop offset="100%" stop-color={`hsl(${hue + 18} 88% 38%)`} />
+          </linearGradient>
+          <radialGradient id={`${uid}r`} cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0%" stop-color="#fff" stop-opacity="0.42" />
+            <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+          </radialGradient>
+          <clipPath id={`${uid}c`}>
+            <rect width="100" height="100" />
+          </clipPath>
+        </defs>
+
+        <g clip-path={`url(#${uid}c)`}>
+          <rect width="100" height="100" fill={`url(#${uid}g)`} />
+          <circle cx={cx1} cy={cy1} r={r1} fill={`url(#${uid}r)`} />
+          <circle cx={cx2} cy={cy2} r={r2} fill="#fff" opacity="0.13" />
+
+          {variant === 0 && (
+            <g stroke="#fff" stroke-opacity="0.22" stroke-width="0.7" fill="none">
+              {[...Array(7)].map((_, i) => (
+                <circle cx={cx1} cy={cy1} r={8 + i * 7} />
+              ))}
+            </g>
+          )}
+
+          {variant === 1 && (
+            <g stroke="#fff" stroke-opacity="0.18" stroke-width="0.6">
+              {[...Array(11)].map((_, i) => (
+                <line x1={i * 10} y1="0" x2={i * 10 - 30} y2="100" />
+              ))}
+            </g>
+          )}
+
+          {variant === 2 && (
+            <g fill="#fff" fill-opacity="0.16" transform={`rotate(${rot} 50 50)`}>
+              {[...Array(4)].map((_, i) => (
+                <rect x={10 + i * 21} y="18" width="12" height="64" rx="6" />
+              ))}
+            </g>
+          )}
+
+          {variant === 3 && (
+            <g stroke="#fff" stroke-opacity="0.24" stroke-width="0.8" fill="none">
+              <path d={`M-5 ${60 + rand(10, 3)} Q 25 ${20 + rand(20, 5)} 50 55 T 105 ${40 + rand(15, 9)}`} />
+              <path d={`M-5 ${75 + rand(10, 7)} Q 30 ${40 + rand(20, 11)} 55 70 T 105 ${58 + rand(15, 13)}`} />
+            </g>
+          )}
+
+          {/* four cells — the brand mark, quietly embedded */}
+          <g fill="#fff" fill-opacity="0.9" transform="translate(74 74)">
+            <rect x="0" y="0" width="7" height="7" rx="1.8" />
+            <rect x="9" y="0" width="7" height="7" rx="1.8" />
+            <rect x="0" y="9" width="7" height="7" rx="1.8" />
+            <rect x="9" y="9" width="7" height="7" rx="1.8" />
+          </g>
+        </g>
+      </svg>
+    )
+  }
+</div>
+
+<style>
+  .cover {
+    position: relative;
+    aspect-ratio: var(--ratio);
+    overflow: hidden;
+    background: var(--bg-sunken);
+  }
+
+  .cover > * {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--dur-slow) var(--ease);
+  }
+
+  :global(.card:hover) .cover > * {
+    transform: scale(1.04);
+  }
+</style>

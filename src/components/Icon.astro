@@ -1,0 +1,55 @@
+---
+interface Props {
+  name: string;
+  size?: number;
+  class?: string;
+}
+const { name, size = 24, class: klass = '' } = Astro.props;
+
+// Original line-art glyphs, 24x24 grid, drawn to share one stroke language.
+const paths: Record<string, string> = {
+  cell: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.4"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21"/>',
+  flask: '<path d="M9.5 3h5M10.5 3v6.2L5.6 17.4A2 2 0 0 0 7.3 20.5h9.4a2 2 0 0 0 1.7-3.1L13.5 9.2V3"/><path d="M8 15h8"/>',
+  atom: '<circle cx="12" cy="12" r="2.2"/><ellipse cx="12" cy="12" rx="10" ry="4.3"/><ellipse cx="12" cy="12" rx="10" ry="4.3" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.3" transform="rotate(120 12 12)"/>',
+  planet: '<circle cx="12" cy="11" r="6.6"/><ellipse cx="12" cy="12.6" rx="11" ry="3.6" transform="rotate(-22 12 12.6)"/>',
+  variable: '<path d="M7.5 5C5.4 7.2 4.4 9.5 4.4 12s1 4.8 3.1 7M16.5 5c2.1 2.2 3.1 4.5 3.1 7s-1 4.8-3.1 7"/><path d="M9.6 9.2l4.8 5.6M14.4 9.2l-4.8 5.6"/>',
+  triangle: '<path d="M12 4.2 20.4 19H3.6z"/><path d="M8.6 19a4.4 4.4 0 0 1 1.3-3.1"/>',
+  wave: '<path d="M2 12c2.5 0 2.5-6.5 5-6.5S9.5 18.5 12 18.5s2.5-13 5-13S19.5 12 22 12"/>',
+  curve: '<path d="M3 20c6.5 0 11.5-4.6 11.5-16"/><path d="M3 20h18"/><path d="M17 20c0-2.2 1.4-3.6 4-3.9"/>',
+  gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.6v2.6M12 18.8v2.6M21.4 12h-2.6M5.2 12H2.6M18.6 5.4l-1.8 1.8M7.2 16.8l-1.8 1.8M18.6 18.6l-1.8-1.8M7.2 7.2 5.4 5.4"/>',
+  arrow: '<path d="M4 12h15"/><path d="m13 6 6 6-6 6"/>',
+  search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/>',
+  close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  menu: '<path d="M3 6h18M3 12h18M3 18h18"/>',
+  sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M22 12h-2.4M4.4 12H2M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7M19.1 19.1l-1.7-1.7M6.6 6.6 4.9 4.9"/>',
+  moon: '<path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8Z"/>',
+  book: '<path d="M4 4.5h6a2.5 2.5 0 0 1 2.5 2.5v13A2 2 0 0 0 10.5 18H4z"/><path d="M20 4.5h-6A2.5 2.5 0 0 0 11.5 7v13a2 2 0 0 1 2-2H20z"/>',
+  quiz: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.4"/><path d="M12 17.2h.01"/>',
+  spark: '<path d="M12 3v4.2M12 16.8V21M3 12h4.2M16.8 12H21"/><path d="m6.3 6.3 2.4 2.4M15.3 15.3l2.4 2.4M17.7 6.3l-2.4 2.4M8.7 15.3l-2.4 2.4"/>',
+  mail: '<rect x="2.8" y="5" width="18.4" height="14" rx="2.4"/><path d="m3.6 6.6 7.3 5.6a2 2 0 0 0 2.2 0l7.3-5.6"/>',
+  external: '<path d="M13.5 4.5H19.5V10.5"/><path d="M19.5 4.5 11 13"/><path d="M18 14.5v4a2 2 0 0 1-2 2H5.5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/>',
+};
+
+const d = paths[name] ?? paths.spark;
+---
+
+<svg
+  class={`icon ${klass}`}
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.6"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+  set:html={d}
+/>
+
+<style>
+  .icon {
+    flex-shrink: 0;
+  }
+</style>
